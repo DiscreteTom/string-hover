@@ -1,8 +1,7 @@
 import * as vscode from "vscode";
 import { Lexer } from "retsac";
 import { escapeMarkdownCodeBlock } from "./utils";
-
-const debug = process.env.VSCODE_DEBUG_MODE === "true";
+import { config } from "./config";
 
 const lexer = new Lexer.Builder()
   .ignore(Lexer.whitespaces()) // ignore blank characters
@@ -12,7 +11,7 @@ const lexer = new Lexer.Builder()
   })
   .define(Lexer.wordKind("true", "false", "null")) // type's name is the literal value
   .anonymous(Lexer.exact(..."[]{},:")) // single char borders
-  .build({ debug });
+  .build({ debug: config.debug });
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
@@ -21,7 +20,7 @@ export function activate(context: vscode.ExtensionContext) {
         const text = document.getText();
         const offset = document.offsetAt(position);
 
-        if (debug) {
+        if (config.debug) {
           console.log(`offset: ${offset}`);
         }
 
@@ -34,7 +33,7 @@ export function activate(context: vscode.ExtensionContext) {
         );
         if (lineStartOffset > 0) {
           lexer.take(lineStartOffset);
-          if (debug) {
+          if (config.debug) {
             console.log(`lineStartOffset: ${lineStartOffset}`);
           }
         }
@@ -45,7 +44,7 @@ export function activate(context: vscode.ExtensionContext) {
             break;
           }
 
-          if (debug) {
+          if (config.debug) {
             console.log(token);
           }
 
@@ -56,7 +55,7 @@ export function activate(context: vscode.ExtensionContext) {
           ) {
             // don't show hover if the string is not escaped
             if (token.content.indexOf("\\") === -1) {
-              if (debug) {
+              if (config.debug) {
                 console.log(`unescaped string: ${token.content}}`);
               }
               return;
@@ -65,7 +64,7 @@ export function activate(context: vscode.ExtensionContext) {
             // the markdown result
             const md = escapeMarkdownCodeBlock(token.content);
 
-            if (debug) {
+            if (config.debug) {
               console.log(md);
             }
 
