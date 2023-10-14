@@ -14,8 +14,7 @@ export function escapeMarkdownCodeBlock(code: string) {
   // the markdown result
   return [
     `${"`".repeat(codeblockBorderLength)}txt`,
-    // JSON.parse() is used to eval escape sequences like \n
-    `${JSON.parse(code)}`,
+    code,
     `${"`".repeat(codeblockBorderLength)}`,
   ].join("\n");
 }
