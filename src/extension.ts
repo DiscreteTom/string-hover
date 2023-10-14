@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { Lexer } from "retsac";
+import { escapeMarkdownCodeBlock } from "./utils";
 
 const debug = process.env.VSCODE_DEBUG_MODE === "true";
 
@@ -61,20 +62,8 @@ export function activate(context: vscode.ExtensionContext) {
               return;
             }
 
-            // escape '`' for markdown code block
-            const longestMatchLength =
-              token.content
-                .match(/`+/g)
-                ?.reduce((a, b) => (a.length > b.length ? a : b)).length ?? 0;
-            const codeblockBorderLength =
-              longestMatchLength >= 3 ? longestMatchLength + 1 : 3;
-
             // the markdown result
-            const md = [
-              `${"`".repeat(codeblockBorderLength)}txt`,
-              `${JSON.parse(token.content)}`,
-              `${"`".repeat(codeblockBorderLength)}`,
-            ].join("\n");
+            const md = escapeMarkdownCodeBlock(token.content);
 
             if (debug) {
               console.log(md);
