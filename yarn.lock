@@ -1126,6 +1126,11 @@ resolve-from@^4.0.0:
   resolved "https://registry.npmmirror.com/resolve-from/-/resolve-from-4.0.0.tgz#4abcd852ad32dd7baabfe9b40e00a36db5f392e6"
   integrity sha512-pb/MYmXstAkysRFx8piNI1tGFNQIFA3vkE3Gq4EuA1dF6gHp/+vgZqsCGJapvy8N3Q+4o7FwvquPJcnZ7RYy4g==
 
+retsac@^0.12.0:
+  version "0.12.0"
+  resolved "https://registry.npmmirror.com/retsac/-/retsac-0.12.0.tgz#e152b48e9ce999942dfaad65f8d0f7b60c11843b"
+  integrity sha512-ZlJuPmbglW0oUqT5Mzz+D6EVzSB2Nb2li1VK5J9UdEr1Cn7fv7/9Mytz2K3BKNIZTHvQAs61UUFu5DMEHr//tw==
+
 reusify@^1.0.4:
   version "1.0.4"
   resolved "https://registry.npmmirror.com/reusify/-/reusify-1.0.4.tgz#90da382b1e126efc02146e90845a88db12925d76"
