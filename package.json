@@ -1,24 +1,28 @@
 {
   "name": "string-hover",
   "displayName": "string-hover",
-  "description": "",
-  "version": "0.0.1",
+  "description": "Show string values on hover for multiple languages.",
+  "version": "0.1.0",
+  "publisher": "DiscreteTom",
+  "author": {
+    "name": "DiscreteTom",
+    "email": "discrete_tom@outlook.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DiscreteTom/string-hover.git"
+  },
   "engines": {
     "vscode": "^1.83.0"
   },
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onLanguage:json"
+  ],
   "main": "./out/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "string-hover.helloWorld",
-        "title": "Hello World"
-      }
-    ]
-  },
+  "contributes": {},
   "scripts": {
     "vscode:prepublish": "yarn run compile",
     "compile": "tsc -p ./",
