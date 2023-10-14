@@ -1,9 +1,9 @@
-# Change Log
+# CHANGELOG
 
-All notable changes to the "string-hover" extension will be documented in this file.
+## v0.1.0
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+The initial release.
 
-## [Unreleased]
+Support for the following languages:
 
-- Initial release
+- JSON
