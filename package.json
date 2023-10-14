@@ -1,7 +1,7 @@
 {
   "name": "string-hover",
   "displayName": "string-hover",
-  "description": "Show string values on hover for multiple languages.",
+  "description": "Show string values on hover.",
   "version": "0.1.0",
   "publisher": "DiscreteTom",
   "author": {
