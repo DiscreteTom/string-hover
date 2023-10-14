@@ -65,7 +65,20 @@ export function tsStringParser(
         return;
       }
 
-      return token.content;
+      // remove quotes
+      const quote = token.content[0];
+      const unquoted = token.content.slice(
+        1,
+        // the string might be un-closed, so the last char might not be the quote
+        token.content.endsWith(quote) ? -1 : undefined
+      );
+
+      // use double quotes to quote the string
+      const doubleQuoted = '"' + unquoted.replace(/"/g, '\\"') + '"';
+
+      // now the string should be a valid JSON string
+      // so we can parse it with JSON.parse
+      return JSON.parse(doubleQuoted);
     }
 
     // perf: if current token's end is after the position, no need to continue
