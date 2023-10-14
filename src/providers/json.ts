@@ -45,7 +45,7 @@ export function jsonStringParser(
       // don't show hover if the string is not escaped
       if (token.content.indexOf("\\") === -1) {
         if (config.debug) {
-          console.log(`got unescaped string: ${token.content}}`);
+          console.log(`got unescaped string: ${token.content}`);
         }
         return;
       }
