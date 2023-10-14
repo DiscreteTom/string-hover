@@ -6,4 +6,5 @@ The initial release.
 
 Support for the following languages:
 
-- JSON
+- JSON (`*.json`)
+- JSON with comments (`*.jsonc`)
