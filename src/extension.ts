@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { escapeMarkdownCodeBlock } from "./utils";
+import { escapeMarkdownCodeBlock, profile } from "./utils";
 import { config } from "./config";
 import { jsonStringParser } from "./providers/json";
 
@@ -13,7 +13,9 @@ function registerStringHoverProvider(
 ) {
   return vscode.languages.registerHoverProvider(selector, {
     provideHover(document, position, token) {
-      const str = stringParser(document, position, token);
+      const str = profile(selector.toString(), () =>
+        stringParser(document, position, token)
+      );
 
       if (str !== undefined) {
         // the markdown result

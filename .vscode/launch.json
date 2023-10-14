@@ -26,6 +26,17 @@
       }
     },
     {
+      "name": "Run Extension (enable profiling)",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+      "outFiles": ["${workspaceFolder}/out/**/*.js"],
+      "preLaunchTask": "${defaultBuildTask}",
+      "env": {
+        "VSCODE_PROFILE_MODE": "true"
+      }
+    },
+    {
       "name": "Extension Tests",
       "type": "extensionHost",
       "request": "launch",
