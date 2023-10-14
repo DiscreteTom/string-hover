@@ -3,9 +3,12 @@ import { Lexer } from "retsac";
 import { config } from "../config";
 
 export const lexer = new Lexer.Builder()
-  .ignore(Lexer.comment("//"), Lexer.comment("/*", "*/"))
-  // perf: ignore all non-string-beginning-or-slash chars in one token
-  .ignore(/[^"\/]+/)
+  .ignore(
+    Lexer.comment("//"),
+    Lexer.comment("/*", "*/"),
+    // perf: ignore all non-string-beginning-or-slash chars in one token
+    /[^"\/]+/
+  )
   .define({ string: Lexer.stringLiteral(`"`) })
   .build();
 
