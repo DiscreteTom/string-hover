@@ -17,25 +17,15 @@ export function jsonStringParser(
   position: vscode.Position,
   token: vscode.CancellationToken
 ) {
-  // TODO: don't get the entire text
-  const text = document.getText();
-  const offset = document.offsetAt(position);
+  // perf: only get the current line
+  // since JSON doesn't allow multi-line string & comments
+  const text = document.getText(
+    new vscode.Range(position.line, 0, position.line + 1, 0)
+  );
 
   // TODO: cancel with token
 
   lexer.reset().feed(text);
-
-  // perf: jump to the start of the target line, instead of lexing the whole file
-  // since JSON doesn't allow multi-line string
-  const lineStartOffset = document.offsetAt(
-    new vscode.Position(position.line, 0)
-  );
-  if (lineStartOffset > 0) {
-    lexer.take(lineStartOffset);
-    if (config.debug) {
-      console.log(`lineStartOffset: ${lineStartOffset}`);
-    }
-  }
 
   while (true) {
     const token = lexer.lex();
@@ -47,9 +37,11 @@ export function jsonStringParser(
 
     if (
       token.kind === "string" &&
-      token.start <= offset &&
-      token.start + token.content.length >= offset
+      token.start <= position.character &&
+      token.start + token.content.length >= position.character
     ) {
+      // got a string token, and the position is in the token
+
       // don't show hover if the string is not escaped
       if (token.content.indexOf("\\") === -1) {
         if (config.debug) {
@@ -61,8 +53,11 @@ export function jsonStringParser(
       return token.content;
     }
 
-    // TODO: if current token's position is larger than offset, return
+    // perf: if current token's end is after the position, no need to continue
+    if (token.start + token.content.length > position.character) {
+      return;
+    }
 
-    // else, not string, continue
+    // else, got token but not string, continue
   }
 }
