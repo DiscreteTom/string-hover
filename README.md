@@ -12,6 +12,7 @@ This is useful to inspect the unescaped value for escaped strings (e.g. `\n`, `\
 
 ## Supported Languages
 
-- JSON
+- JSON (`*.json`)
+- JSON with comments (`*.jsonc`)
 
 ## [CHANGELOG](https://github.com/DiscreteTom/string-hover/blob/main/CHANGELOG.md)
