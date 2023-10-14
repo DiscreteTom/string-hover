@@ -15,7 +15,7 @@ const lexer = new Lexer.Builder()
 export function jsonStringParser(
   document: vscode.TextDocument,
   position: vscode.Position,
-  token: vscode.CancellationToken
+  cancel: vscode.CancellationToken
 ) {
   // perf: only get the current line
   // since JSON doesn't allow multi-line string & comments
@@ -23,11 +23,14 @@ export function jsonStringParser(
     new vscode.Range(position.line, 0, position.line + 1, 0)
   );
 
-  // TODO: cancel with token
-
   lexer.reset().feed(text);
 
   while (true) {
+    // just return if cancellation is requested
+    if (cancel.isCancellationRequested) {
+      return;
+    }
+
     const token = lexer.lex();
 
     if (token === null) {
