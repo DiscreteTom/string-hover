@@ -12,9 +12,9 @@ function registerStringHoverProvider(
   ) => string | undefined
 ) {
   return vscode.languages.registerHoverProvider(selector, {
-    provideHover(document, position, token) {
+    provideHover(document, position, cancel) {
       const str = profile(selector.toString(), () =>
-        stringParser(document, position, token)
+        stringParser(document, position, cancel)
       );
 
       if (str !== undefined) {
