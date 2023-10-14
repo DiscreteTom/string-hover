@@ -3,13 +3,10 @@ import { Lexer } from "retsac";
 import { config } from "../config";
 
 const lexer = new Lexer.Builder()
-  .ignore(Lexer.whitespaces()) // ignore blank characters
-  .define({
-    string: Lexer.stringLiteral(`"`), // double quote string literal
-    number: /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/,
-  })
-  .define(Lexer.wordKind("true", "false", "null")) // type's name is the literal value
-  .anonymous(Lexer.exact(..."[]{},:")) // single char borders
+  // perf: ignore all non-string-beginning chars in one token
+  // since JSON doesn't allow multi-line string & comments
+  .ignore(/[^"]+/)
+  .define({ string: Lexer.stringLiteral(`"`) })
   .build({ debug: config.debug });
 
 export function jsonStringParser(
