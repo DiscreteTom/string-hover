@@ -3,6 +3,7 @@ import { escapeMarkdownCodeBlock, profile } from "./utils";
 import { config } from "./config";
 import { jsonStringParser } from "./providers/json";
 import { jsoncStringParser } from "./providers/jsonc";
+import { tsStringParser } from "./providers/ts";
 
 function registerStringHoverProvider(
   selector: vscode.DocumentSelector,
@@ -37,7 +38,9 @@ function registerStringHoverProvider(
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     registerStringHoverProvider("json", jsonStringParser),
-    registerStringHoverProvider("jsonc", jsoncStringParser)
+    registerStringHoverProvider("jsonc", jsoncStringParser),
+    registerStringHoverProvider("javascript", tsStringParser),
+    registerStringHoverProvider("typescript", tsStringParser)
   );
 }
 

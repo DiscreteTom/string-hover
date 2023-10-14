@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.1.1
+
+- Feat: support more languages
+  - JavaScript (`*.js`)
+  - TypeScript (`*.ts`)
+
 ## v0.1.0
 
 The initial release.

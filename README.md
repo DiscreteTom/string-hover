@@ -14,6 +14,8 @@ This is useful to inspect the unescaped value for escaped strings (e.g. `\n`, `\
 
 - JSON (`*.json`)
 - JSON with comments (`*.jsonc`)
+- JavaScript (`*.js`)
+- TypeScript (`*.ts`)
 
 ## Contributing
 
