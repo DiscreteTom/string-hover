@@ -91,7 +91,7 @@ export function tsStringParser(
   lexer.reset().feed(text);
 
   const tempStrStack = [] as NonNullable<ReturnType<(typeof lexer)["lex"]>>[][];
-  let isCurrentTempStr = false;
+  let targetTempStrIndex = 0;
   while (true) {
     // just return if cancellation is requested
     if (cancel.isCancellationRequested) {
@@ -144,7 +144,11 @@ export function tsStringParser(
       token.start <= offset &&
       offset <= token.start + token.content.length
     ) {
-      isCurrentTempStr = true;
+      if (token.kind === "tempStrLeft") {
+        targetTempStrIndex = tempStrStack.length;
+      } else {
+        targetTempStrIndex = tempStrStack.length - 1;
+      }
     }
 
     if (token.kind === "tempStrLeft") {
@@ -154,7 +158,7 @@ export function tsStringParser(
     } else if (token.kind === "tempStrRight") {
       tempStrStack.at(-1)!.push(token);
       const tokens = tempStrStack.pop()!;
-      if (isCurrentTempStr) {
+      if (targetTempStrIndex === tempStrStack.length) {
         const quoted = tokens.map((t) => t.content).join("...");
         const unquoted = quoted.slice(1, quoted.endsWith("`") ? -1 : undefined);
         const doubleQuoted = '"' + unquoted.replace(/"/g, '\\"') + '"';
