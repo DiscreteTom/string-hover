@@ -162,7 +162,10 @@ export function tsStringParser(
         const quoted = tokens.map((t) => t.content).join("...");
         const unquoted = quoted.slice(1, quoted.endsWith("`") ? -1 : undefined);
         const doubleQuoted = '"' + unquoted.replace(/"/g, '\\"') + '"';
-        return JSON.parse(doubleQuoted);
+        // fix \n in template string
+        // since newline is allowed in template string but not in JSON string
+        const escaped = doubleQuoted.replace(/\n/g, "\\n");
+        return JSON.parse(escaped);
       }
     }
 
