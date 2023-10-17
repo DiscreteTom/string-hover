@@ -3,24 +3,80 @@ import { Lexer } from "retsac";
 import { config } from "../config";
 
 const lexer = new Lexer.Builder()
+  .useState({
+    // use braceDepthStack to calculate the depth of nested curly braces.
+    // when a new template string starts, push 0 to the stack.
+    braceDepthStack: [0],
+  })
   .ignore(
-    // first, ignore comments
+    // first, ignore comments & regex literals
     Lexer.comment("//"),
     Lexer.comment("/*", "*/"),
-    // then, ignore all non-string-beginning-or-slash chars in one token
-    /[^"'`\/]+/,
+    Lexer.regexLiteral(),
+    // then, ignore all chars except string-beginning,
+    // slash (the beginning of comment)
+    // and curly braces (to calculate nested depth)
+    // in one token
+    /[^"'`\/{}]+/,
     // then, ignore non-comment slash
     /\//
     // now the rest must starts with a string
+    // or curly braces
   )
-  .define({
-    string: [
-      Lexer.stringLiteral(`"`),
-      Lexer.stringLiteral(`'`),
-      // TODO: support interpolation in template string
-      Lexer.stringLiteral("`", { multiline: true }),
-    ],
-  })
+  // TODO: use Lexer.anonymous, https://github.com/DiscreteTom/retsac/issues/27
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  .define({ "": Lexer.exact("{") }, (a) =>
+    a.then(
+      ({ input }) =>
+        input.state.braceDepthStack[input.state.braceDepthStack.length - 1]++
+    )
+  )
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  .define({ "": Lexer.exact("}") }, (a) =>
+    a
+      // reject if no '{' before '}'
+      .reject(({ input }) => input.state.braceDepthStack.at(-1) === 0)
+      .then(
+        ({ input }) =>
+          input.state.braceDepthStack[input.state.braceDepthStack.length - 1]--
+      )
+  )
+  // normal strings
+  .define({ string: [Lexer.stringLiteral(`"`), Lexer.stringLiteral(`'`)] })
+  // template strings
+  .define(
+    // TODO: https://github.com/DiscreteTom/retsac/issues/28
+    { string: /`(?:\\.|[^\\`$])*(?:\$\{|`|$)/ },
+    // reject if ends with '${'
+    (a) => a.reject(({ output }) => output.content.endsWith("${"))
+  )
+  .define({ tempStrLeft: /`(?:\\.|[^\\`$])*(?:\$\{|`|$)/ }, (a) =>
+    a
+      // reject if not ends with '${'
+      .reject(({ output }) => !output.content.endsWith("${"))
+      .then(({ input }) => input.state.braceDepthStack.push(0))
+  )
+  .define({ tempStrRight: /\}(?:\\.|[^\\`$])*(\$\{|`|$)/ }, (a) =>
+    a
+      .reject(
+        ({ output, input }) =>
+          input.state.braceDepthStack.at(-1) !== 0 || // brace not close
+          input.state.braceDepthStack.length === 1 || // not in template string
+          output.content.endsWith("${") // should be tempStrMiddle
+      )
+      .then(({ input }) => input.state.braceDepthStack.pop())
+  )
+  .define(
+    { tempStrMiddle: /\}(?:\\.|[^\\`$])*(\$\{|`|$)/ },
+    // reject if not in template string
+    (a) =>
+      a.reject(
+        ({ input, output }) =>
+          input.state.braceDepthStack.at(-1) !== 0 || // brace not close
+          input.state.braceDepthStack.length === 1 || // not in template string
+          !output.content.endsWith("${") // should be tempStrRight
+      )
+  )
   .build({ debug: config.debug });
 
 export function tsStringParser(
@@ -34,6 +90,8 @@ export function tsStringParser(
 
   lexer.reset().feed(text);
 
+  const tempStrStack = [] as NonNullable<ReturnType<(typeof lexer)["lex"]>>[][];
+  let isCurrentTempStr = false;
   while (true) {
     // just return if cancellation is requested
     if (cancel.isCancellationRequested) {
@@ -81,8 +139,36 @@ export function tsStringParser(
       return JSON.parse(doubleQuoted);
     }
 
-    // perf: if current token's end is after the position, no need to continue
-    if (token.start + token.content.length > offset) {
+    if (
+      ["tempStrLeft", "tempStrMiddle", "tempStrRight"].includes(token.kind) &&
+      token.start <= offset &&
+      offset <= token.start + token.content.length
+    ) {
+      isCurrentTempStr = true;
+    }
+
+    if (token.kind === "tempStrLeft") {
+      tempStrStack.push([token]);
+    } else if (token.kind === "tempStrMiddle") {
+      tempStrStack.at(-1)!.push(token);
+    } else if (token.kind === "tempStrRight") {
+      tempStrStack.at(-1)!.push(token);
+      const tokens = tempStrStack.pop()!;
+      if (isCurrentTempStr) {
+        const quoted = tokens.map((t) => t.content).join("...");
+        const unquoted = quoted.slice(1, quoted.endsWith("`") ? -1 : undefined);
+        const doubleQuoted = '"' + unquoted.replace(/"/g, '\\"') + '"';
+        return JSON.parse(doubleQuoted);
+      }
+    }
+
+    // perf: if current token's end is after the position, no need to continue.
+    // make sure current token is a simple string, and not in a temp string
+    if (
+      token.kind === "string" &&
+      tempStrStack.length === 0 &&
+      token.start + token.content.length > offset
+    ) {
       return;
     }
 
