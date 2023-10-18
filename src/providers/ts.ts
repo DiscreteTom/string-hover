@@ -5,7 +5,7 @@ import { config } from "../config";
 const lexer = new Lexer.Builder()
   .useState({
     // use braceDepthStack to calculate the depth of nested curly braces.
-    // when a new template string starts, push 0 to the stack.
+    // when a new template string starts, push 0 to the front of the stack.
     braceDepthStack: [0],
   })
   .ignore(
@@ -26,20 +26,14 @@ const lexer = new Lexer.Builder()
   // TODO: use Lexer.anonymous, https://github.com/DiscreteTom/retsac/issues/27
   // eslint-disable-next-line @typescript-eslint/naming-convention
   .define({ "": Lexer.exact("{") }, (a) =>
-    a.then(
-      ({ input }) =>
-        input.state.braceDepthStack[input.state.braceDepthStack.length - 1]++
-    )
+    a.then(({ input }) => input.state.braceDepthStack[0]++)
   )
   // eslint-disable-next-line @typescript-eslint/naming-convention
   .define({ "": Lexer.exact("}") }, (a) =>
     a
       // reject if no '{' before '}'
-      .reject(({ input }) => input.state.braceDepthStack.at(-1) === 0)
-      .then(
-        ({ input }) =>
-          input.state.braceDepthStack[input.state.braceDepthStack.length - 1]--
-      )
+      .reject(({ input }) => input.state.braceDepthStack[0] === 0)
+      .then(({ input }) => input.state.braceDepthStack[0]--)
   )
   // normal strings
   .define({ string: [Lexer.stringLiteral(`"`), Lexer.stringLiteral(`'`)] })
@@ -54,17 +48,17 @@ const lexer = new Lexer.Builder()
     a
       // reject if not ends with '${'
       .reject(({ output }) => !output.content.endsWith("${"))
-      .then(({ input }) => input.state.braceDepthStack.push(0))
+      .then(({ input }) => input.state.braceDepthStack.unshift(0))
   )
   .define({ tempStrRight: /\}(?:\\.|[^\\`$])*(\$\{|`|$)/ }, (a) =>
     a
       .reject(
         ({ output, input }) =>
-          input.state.braceDepthStack.at(-1) !== 0 || // brace not close
+          input.state.braceDepthStack[0] !== 0 || // brace not close
           input.state.braceDepthStack.length === 1 || // not in template string
           output.content.endsWith("${") // should be tempStrMiddle
       )
-      .then(({ input }) => input.state.braceDepthStack.pop())
+      .then(({ input }) => input.state.braceDepthStack.shift())
   )
   .define(
     { tempStrMiddle: /\}(?:\\.|[^\\`$])*(\$\{|`|$)/ },
@@ -72,7 +66,7 @@ const lexer = new Lexer.Builder()
     (a) =>
       a.reject(
         ({ input, output }) =>
-          input.state.braceDepthStack.at(-1) !== 0 || // brace not close
+          input.state.braceDepthStack[0] !== 0 || // brace not close
           input.state.braceDepthStack.length === 1 || // not in template string
           !output.content.endsWith("${") // should be tempStrRight
       )
