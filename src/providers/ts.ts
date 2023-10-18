@@ -14,11 +14,11 @@ const lexer = new Lexer.Builder()
     Lexer.comment("/*", "*/"),
     Lexer.regexLiteral(),
     // then, ignore all chars except string-beginning,
-    // slash (the beginning of comment)
+    // slash (the beginning of comment & regex)
     // and curly braces (to calculate nested depth)
-    // in one token
+    // in one token (to optimize performance)
     /[^"'`\/{}]+/,
-    // then, ignore non-comment slash
+    // then, ignore non-comment-or-regex slash
     /\//
     // now the rest must starts with a string
     // or curly braces
