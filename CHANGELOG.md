@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.1.2
+
+- Fix(ts): fix `targetTempStrIndex` initial value.
+
 ## v0.1.1
 
 - Feat: support more languages

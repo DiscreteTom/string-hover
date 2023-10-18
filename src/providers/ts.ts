@@ -91,7 +91,7 @@ export function tsStringParser(
   lexer.reset().feed(text);
 
   const tempStrStack = [] as NonNullable<ReturnType<(typeof lexer)["lex"]>>[][];
-  let targetTempStrIndex = 0;
+  let targetTempStrIndex = -1;
   while (true) {
     // just return if cancellation is requested
     if (cancel.isCancellationRequested) {
