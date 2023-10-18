@@ -35,7 +35,7 @@ const lexer = new Lexer.Builder()
       .reject(({ input }) => input.state.braceDepthStack[0] === 0)
       .then(({ input }) => input.state.braceDepthStack[0]--)
   )
-  // normal strings
+  // simple strings
   .define({ string: [Lexer.stringLiteral(`"`), Lexer.stringLiteral(`'`)] })
   // template strings
   .define(
@@ -85,7 +85,11 @@ export function tsStringParser(
   lexer.reset().feed(text);
 
   const tempStrStack = [] as NonNullable<ReturnType<(typeof lexer)["lex"]>>[][];
-  let targetTempStrIndex = -1;
+  /**
+   * `undefined` if the hover is not in a template string.
+   * Otherwise, it's the index of the template string in `tempStrStack`.
+   */
+  let targetTempStrIndex: number | undefined = undefined;
   while (true) {
     // just return if cancellation is requested
     if (cancel.isCancellationRequested) {
@@ -99,6 +103,7 @@ export function tsStringParser(
       return;
     }
 
+    // if simple string or simple template string(no interpolation)
     if (
       token.kind === "string" &&
       token.start <= offset &&
@@ -133,16 +138,16 @@ export function tsStringParser(
       return JSON.parse(doubleQuoted);
     }
 
+    // if the hover is in a template string, set targetTempStrIndex
     if (
       ["tempStrLeft", "tempStrMiddle", "tempStrRight"].includes(token.kind) &&
       token.start <= offset &&
       offset <= token.start + token.content.length
     ) {
-      if (token.kind === "tempStrLeft") {
-        targetTempStrIndex = tempStrStack.length;
-      } else {
-        targetTempStrIndex = tempStrStack.length - 1;
-      }
+      targetTempStrIndex =
+        token.kind === "tempStrLeft"
+          ? tempStrStack.length
+          : tempStrStack.length - 1;
     }
 
     if (token.kind === "tempStrLeft") {
@@ -150,14 +155,15 @@ export function tsStringParser(
     } else if (token.kind === "tempStrMiddle") {
       tempStrStack.at(-1)!.push(token);
     } else if (token.kind === "tempStrRight") {
-      tempStrStack.at(-1)!.push(token);
       const tokens = tempStrStack.pop()!;
+      tokens.push(token);
       if (targetTempStrIndex === tempStrStack.length) {
+        // got the target template string, calculate string value
         const quoted = tokens.map((t) => t.content).join("...");
         const unquoted = quoted.slice(1, quoted.endsWith("`") ? -1 : undefined);
         const doubleQuoted = '"' + unquoted.replace(/"/g, '\\"') + '"';
         // fix \n in template string
-        // since newline is allowed in template string but not in JSON string
+        // since newline is allowed in template string but not allowed in JSON string
         const escaped = doubleQuoted.replace(/\n/g, "\\n");
         return JSON.parse(escaped);
       }
@@ -165,6 +171,7 @@ export function tsStringParser(
 
     // perf: if current token's end is after the position, no need to continue.
     // make sure current token is a simple string, and not in a temp string
+    // otherwise the hover target may be the tempStrMiddle/tempStrRight which is after the position
     if (
       token.kind === "string" &&
       tempStrStack.length === 0 &&
