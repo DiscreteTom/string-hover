@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { Lexer } from "retsac";
 import { config } from "../config";
+import { evalJsonString } from "../utils";
 
 const lexer = new Lexer.Builder()
   // perf: ignore all non-string-beginning chars in one token
@@ -50,8 +51,7 @@ export function jsonStringParser(
         return;
       }
 
-      // JSON.parse() is used to eval escape sequences like \n
-      return JSON.parse(token.content) as string;
+      return evalJsonString(token.content);
     }
 
     // perf: if current token's end is after the position, no need to continue

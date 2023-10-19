@@ -29,3 +29,18 @@ export function profile<R>(label: string, f: () => R) {
   }
   return res;
 }
+
+export function evalJsonString(jsonStr: string) {
+  try {
+    // JSON.parse() is used to eval escape sequences like \n
+    const res = JSON.parse(jsonStr);
+    if (typeof res !== "string") {
+      console.error(`Parsed JSON is not string: ${JSON.stringify(jsonStr)}`);
+      return;
+    }
+    return res;
+  } catch {
+    console.error(`Failed to parse JSON string: ${JSON.stringify(jsonStr)}`);
+    return;
+  }
+}

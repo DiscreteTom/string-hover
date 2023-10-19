@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { Lexer } from "retsac";
 import { config } from "../config";
+import { evalJsonString } from "../utils";
 
 const lexer = new Lexer.Builder()
   .useState({
@@ -134,8 +135,7 @@ export function tsStringParser(
       const doubleQuoted = '"' + unquoted.replace(/"/g, '\\"') + '"';
 
       // now the string should be a valid JSON string
-      // so we can parse it with JSON.parse
-      return JSON.parse(doubleQuoted) as string;
+      return evalJsonString(doubleQuoted);
     }
 
     // if the hover is in a template string, set targetTempStrIndex
@@ -165,7 +165,7 @@ export function tsStringParser(
         // fix \n in template string
         // since newline is allowed in template string but not allowed in JSON string
         const escaped = doubleQuoted.replace(/\n/g, "\\n");
-        return JSON.parse(escaped) as string;
+        return evalJsonString(escaped);
       }
     }
 
