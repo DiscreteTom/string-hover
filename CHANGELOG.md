@@ -3,6 +3,7 @@
 ## v0.1.3
 
 - Fix(ts): fix all escape sequence, including `\x` and `\u`.
+- Remove singleton and global variables.
 
 ## v0.1.2
 

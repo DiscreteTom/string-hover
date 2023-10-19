@@ -1,19 +1,19 @@
 import * as vscode from "vscode";
 import { escapeMarkdownCodeBlock, profile } from "./utils";
 import { config } from "./config";
-import { jsonStringParser } from "./providers/json";
-import { jsoncStringParser } from "./providers/jsonc";
-import { tsStringParser } from "./providers/ts";
-import { StringParser } from "./types";
+import { IStringParser } from "./model";
+import { JsonStringParser } from "./providers/json";
+import { JsoncStringParser } from "./providers/jsonc";
+import { TsStringParser } from "./providers/ts";
 
 function registerStringHoverProvider(
   selector: vscode.DocumentSelector,
-  stringParser: StringParser
+  parser: IStringParser
 ) {
   return vscode.languages.registerHoverProvider(selector, {
     provideHover(document, position, cancel) {
       const str = profile(selector.toString(), () =>
-        stringParser(document, position, cancel)
+        parser.parse(document, position, cancel)
       );
 
       if (str !== undefined) {
@@ -34,10 +34,10 @@ function registerStringHoverProvider(
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
-    registerStringHoverProvider("json", jsonStringParser),
-    registerStringHoverProvider("jsonc", jsoncStringParser),
-    registerStringHoverProvider("javascript", tsStringParser),
-    registerStringHoverProvider("typescript", tsStringParser)
+    registerStringHoverProvider("json", new JsonStringParser()),
+    registerStringHoverProvider("jsonc", new JsoncStringParser()),
+    registerStringHoverProvider("javascript", new TsStringParser()),
+    registerStringHoverProvider("typescript", new TsStringParser())
   );
 }
 
