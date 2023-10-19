@@ -51,7 +51,7 @@ export function jsonStringParser(
       }
 
       // JSON.parse() is used to eval escape sequences like \n
-      return JSON.parse(token.content);
+      return JSON.parse(token.content) as string;
     }
 
     // perf: if current token's end is after the position, no need to continue

@@ -135,7 +135,7 @@ export function tsStringParser(
 
       // now the string should be a valid JSON string
       // so we can parse it with JSON.parse
-      return JSON.parse(doubleQuoted);
+      return JSON.parse(doubleQuoted) as string;
     }
 
     // if the hover is in a template string, set targetTempStrIndex
@@ -165,7 +165,7 @@ export function tsStringParser(
         // fix \n in template string
         // since newline is allowed in template string but not allowed in JSON string
         const escaped = doubleQuoted.replace(/\n/g, "\\n");
-        return JSON.parse(escaped);
+        return JSON.parse(escaped) as string;
       }
     }
 
