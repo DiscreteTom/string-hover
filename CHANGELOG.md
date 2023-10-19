@@ -4,6 +4,7 @@
 
 - Fix(ts): fix all escape sequence, including `\x` and `\u`.
 - Remove singleton and global variables.
+- Add tests.
 
 ## v0.1.2
 
