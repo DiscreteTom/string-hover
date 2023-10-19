@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 import { Lexer } from "retsac";
 import { config } from "../config";
-import { evalJsonString } from "../utils";
 
 const lexer = new Lexer.Builder()
   .useState({
@@ -148,7 +147,7 @@ export function tsStringParser(
       if (targetTempStrIndex === tempStrStack.length) {
         // got the target template string, calculate string value
         const quoted = tokens.map((t) => t.content).join("...");
-        return evalJsonString(quoted);
+        return evalTsString(quoted);
       }
     }
 
