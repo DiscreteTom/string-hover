@@ -147,6 +147,9 @@ export class TsStringParser implements IStringParser {
           token.kind === "tempStrLeft"
             ? tempStrStack.length
             : tempStrStack.length - 1;
+        if (config.debug) {
+          console.log(`set target temp string index: ${targetTempStrIndex}`);
+        }
       }
 
       if (token.kind === "tempStrLeft") {
