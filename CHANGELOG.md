@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.1.3
+
+- Fix(ts): fix `\n` in simple string.
+
 ## v0.1.2
 
 - Fix(ts): fix `targetTempStrIndex` initial value.

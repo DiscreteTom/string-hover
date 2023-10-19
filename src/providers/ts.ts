@@ -134,8 +134,15 @@ export function tsStringParser(
       // use double quotes to quote the string
       const doubleQuoted = '"' + unquoted.replace(/"/g, '\\"') + '"';
 
+      // fix \n in template string
+      // since newline is allowed in template string but not allowed in JSON string
+      // TODO: escape \t and other escape sequences
+      // TODO: move these logic into evalJsonString?
+      // TODO: unescape bad-escaped char, e.g. '`'
+      const escaped = doubleQuoted.replace(/\n/g, "\\n");
+
       // now the string should be a valid JSON string
-      return evalJsonString(doubleQuoted);
+      return evalJsonString(escaped);
     }
 
     // if the hover is in a template string, set targetTempStrIndex
