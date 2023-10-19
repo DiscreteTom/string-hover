@@ -57,7 +57,7 @@ suite("TypeScript", () => {
   test("template string middle", () => {
     expectHoverEqual(
       new TsStringParser(),
-      new vscode.Position(0, 23),
+      new vscode.Position(0, 15),
       "begin${...}middle${...}end",
       "`begin${ 123 }middle${ 456 }end`"
     );
@@ -88,8 +88,8 @@ suite("TypeScript", () => {
     expectHoverEqual(
       new TsStringParser(),
       new vscode.Position(0, 0),
-      "1\t23",
-      `"1\t23"`
+      "1\t\t23",
+      `"1\t\\t23"`
     );
     expectHoverEqual(
       new TsStringParser(),
