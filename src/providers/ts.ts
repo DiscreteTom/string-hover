@@ -123,26 +123,7 @@ export function tsStringParser(
         return;
       }
 
-      // remove quotes
-      const quote = token.content[0];
-      const unquoted = token.content.slice(
-        1,
-        // the string might be un-closed, so the last char might not be the quote
-        token.content.endsWith(quote) ? -1 : undefined
-      );
-
-      // use double quotes to quote the string
-      const doubleQuoted = '"' + unquoted.replace(/"/g, '\\"') + '"';
-
-      // fix \n in template string
-      // since newline is allowed in template string but not allowed in JSON string
-      // TODO: escape \t and other escape sequences
-      // TODO: move these logic into evalJsonString?
-      // TODO: unescape bad-escaped char, e.g. '`'
-      const escaped = doubleQuoted.replace(/\n/g, "\\n");
-
-      // now the string should be a valid JSON string
-      return evalJsonString(escaped);
+      return evalTsString(token.content);
     }
 
     // if the hover is in a template string, set targetTempStrIndex
@@ -167,12 +148,7 @@ export function tsStringParser(
       if (targetTempStrIndex === tempStrStack.length) {
         // got the target template string, calculate string value
         const quoted = tokens.map((t) => t.content).join("...");
-        const unquoted = quoted.slice(1, quoted.endsWith("`") ? -1 : undefined);
-        const doubleQuoted = '"' + unquoted.replace(/"/g, '\\"') + '"';
-        // fix \n in template string
-        // since newline is allowed in template string but not allowed in JSON string
-        const escaped = doubleQuoted.replace(/\n/g, "\\n");
-        return evalJsonString(escaped);
+        return evalJsonString(quoted);
       }
     }
 
@@ -189,4 +165,56 @@ export function tsStringParser(
 
     // else, got token but not string, continue
   }
+}
+
+// TODO: make this a Lexer utils in retsac
+function evalTsString(quoted: string) {
+  // remove quotes
+  const quote = quoted[0];
+  const unquoted = quoted.slice(
+    // remove the first quote
+    1,
+    // the string might be un-closed, so the last char might not be the quote.
+    // maybe the last char of the un-closed string is an escaped quote
+    quoted.at(-1) === quote && quoted.at(-2) !== "\\" ? -1 : undefined
+  );
+
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#literals
+  // IMPORTANT! all escaped chars should be searched simultaneously!
+  // e.g. you should NOT search `\\` first then search `\n`
+  return unquoted.replace(
+    /(\\0|\\'|\\"|\\n|\\\\|\\r|\\v|\\t|\\b|\\f|\\\n|\\`|\\x([0-9a-fA-F]{2})|\\u([0-9a-fA-F]{4}))/g,
+    (match) => {
+      if (match === `\\0`) {
+        return "\0";
+      } else if (match === `\\'`) {
+        return "'";
+      } else if (match === `\\"`) {
+        return '"';
+      } else if (match === `\\n`) {
+        return "\n";
+      } else if (match === `\\\\`) {
+        return "\\";
+      } else if (match === `\\r`) {
+        return "\r";
+      } else if (match === `\\v`) {
+        return "\v";
+      } else if (match === `\\t`) {
+        return "\t";
+      } else if (match === `\\b`) {
+        return "\b";
+      } else if (match === `\\f`) {
+        return "\f";
+      } else if (match === `\\\n`) {
+        return "";
+      } else if (match === "\\`") {
+        return "`";
+      } else if (match.startsWith("\\x")) {
+        return String.fromCharCode(parseInt(match.slice(2), 16));
+      } else {
+        // match.startsWith("\\u")
+        return String.fromCharCode(parseInt(match.slice(4), 16));
+      }
+    }
+  );
 }

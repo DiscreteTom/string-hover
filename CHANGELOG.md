@@ -2,7 +2,7 @@
 
 ## v0.1.3
 
-- Fix(ts): fix `\n` in simple string.
+- Fix(ts): fix all escape sequence, including `\x` and `\u`.
 
 ## v0.1.2
 
