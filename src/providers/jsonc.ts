@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { Lexer } from "retsac";
 import { config } from "../config";
-import { evalJsonString } from "../utils";
+import { evalJsonString } from "./json";
 
 export const lexer = new Lexer.Builder()
   .ignore(
