@@ -4,14 +4,11 @@ import { config } from "./config";
 import { jsonStringParser } from "./providers/json";
 import { jsoncStringParser } from "./providers/jsonc";
 import { tsStringParser } from "./providers/ts";
+import { StringParser } from "./types";
 
 function registerStringHoverProvider(
   selector: vscode.DocumentSelector,
-  stringParser: (
-    document: vscode.TextDocument,
-    position: vscode.Position,
-    token: vscode.CancellationToken
-  ) => string | undefined
+  stringParser: StringParser
 ) {
   return vscode.languages.registerHoverProvider(selector, {
     provideHover(document, position, cancel) {
