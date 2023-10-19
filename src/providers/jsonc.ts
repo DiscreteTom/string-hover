@@ -16,7 +16,7 @@ export class JsoncStringParser implements IStringParser {
         /[^"\/]+/
       )
       .define({ string: Lexer.stringLiteral(`"`) })
-      .build();
+      .build({ debug: config.debug });
   }
 
   parse(
