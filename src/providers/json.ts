@@ -17,9 +17,7 @@ export function jsonStringParser(
 ) {
   // perf: only get the current line
   // since JSON doesn't allow multi-line string & comments
-  const text = document.getText(
-    new vscode.Range(position.line, 0, position.line + 1, 0)
-  );
+  const text = document.lineAt(position).text;
 
   lexer.reset().feed(text);
 
