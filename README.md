@@ -8,12 +8,12 @@ VSCode extension to show string values on hover.
 
 This is useful to inspect the unescaped value for escaped strings (e.g. `\n`, `\\` and `\"`).
 
-![JSON](img/json.png)
+![example](img/ts.png)
 
 ## Supported Languages
 
-- JSON (`*.json`) / JSON with comments (`*.jsonc`)
 - JavaScript (`*.js`) / TypeScript (`*.ts`)
+- JSON (`*.json`) / JSON with comments (`*.jsonc`)
 
 ## Contributing
 
