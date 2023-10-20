@@ -59,7 +59,7 @@ export class TsStringParser implements IStringParser {
           .reject(({ output }) => !output.content.endsWith("${"))
           .then(({ input }) => input.state.braceDepthStack.unshift(0))
       )
-      .define({ tempStrRight: /\}(?:\\.|[^\\`$])*(\$\{|`|$)/ }, (a) =>
+      .define({ tempStrRight: /\}(?:\\.|[^\\`$])*(?:\$\{|`|$)/ }, (a) =>
         a
           .reject(
             ({ output, input }) =>
@@ -70,7 +70,7 @@ export class TsStringParser implements IStringParser {
           .then(({ input }) => input.state.braceDepthStack.shift())
       )
       .define(
-        { tempStrMiddle: /\}(?:\\.|[^\\`$])*(\$\{|`|$)/ },
+        { tempStrMiddle: /\}(?:\\.|[^\\`$])*(?:\$\{|`|$)/ },
         // reject if not in template string
         (a) =>
           a.reject(
