@@ -4,6 +4,7 @@
   "description": "Show string values on hover.",
   "version": "0.1.5",
   "publisher": "DiscreteTom",
+  "icon": "img/icon.png",
   "author": {
     "name": "DiscreteTom",
     "email": "discrete_tom@outlook.com"

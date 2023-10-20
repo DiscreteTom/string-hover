@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.1.6
+
+- Add icon.
+
 ## v0.1.5
 
 Fix README.
