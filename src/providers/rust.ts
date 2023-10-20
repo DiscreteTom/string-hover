@@ -48,7 +48,8 @@ export class RustStringParser implements IStringParser {
           }
         }),
       })
-      .ignore(/r/)
+      .ignore(/r/) // finally, ignore non-raw-string 'r'
+      // TODO: do we need to handle rust macros?
       .build({ debug: config.debug });
   }
 
