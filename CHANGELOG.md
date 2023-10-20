@@ -3,7 +3,8 @@
 ## v0.1.6
 
 - Add icon.
-- Ignore unnecessary images when publishing.
+- Ignore unnecessary files when publishing.
+- Optimize package size.
 
 ## v0.1.5
 
