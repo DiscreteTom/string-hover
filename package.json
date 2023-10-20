@@ -22,7 +22,8 @@
     "onLanguage:json",
     "onLanguage:jsonc",
     "onLanguage:javascript",
-    "onLanguage:typescript"
+    "onLanguage:typescript",
+    "onLanguage:rust"
   ],
   "main": "./out/extension.js",
   "contributes": {},

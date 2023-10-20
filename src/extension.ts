@@ -5,6 +5,7 @@ import { IStringParser } from "./model";
 import { JsonStringParser } from "./providers/json";
 import { JsoncStringParser } from "./providers/jsonc";
 import { TsStringParser } from "./providers/ts";
+import { RustStringParser } from "./providers/rust";
 
 function registerStringHoverProvider(
   selector: vscode.DocumentSelector,
@@ -37,7 +38,8 @@ export function activate(context: vscode.ExtensionContext) {
     registerStringHoverProvider("json", new JsonStringParser()),
     registerStringHoverProvider("jsonc", new JsoncStringParser()),
     registerStringHoverProvider("javascript", new TsStringParser()),
-    registerStringHoverProvider("typescript", new TsStringParser())
+    registerStringHoverProvider("typescript", new TsStringParser()),
+    registerStringHoverProvider("rust", new RustStringParser())
   );
 }
 
