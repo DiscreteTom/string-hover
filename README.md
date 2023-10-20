@@ -13,6 +13,7 @@ This is useful to inspect the unescaped value for escaped strings (e.g. `\n`, `\
 ## Supported Languages
 
 - JavaScript (`*.js`) / TypeScript (`*.ts`)
+- Rust (`*.rs`)
 - JSON (`*.json`) / JSON with comments (`*.jsonc`)
 
 ## Contributing
