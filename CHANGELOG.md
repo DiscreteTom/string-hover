@@ -3,6 +3,7 @@
 ## v0.1.6
 
 - Add icon.
+- Ignore unnecessary images when publishing.
 
 ## v0.1.5
 

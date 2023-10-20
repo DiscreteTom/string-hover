@@ -1,5 +1,7 @@
 .vscode/**
 .vscode-test/**
+img/**
+!img/icon.png
 src/**
 .gitignore
 .yarnrc
