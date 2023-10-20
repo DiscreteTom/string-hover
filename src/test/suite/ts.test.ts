@@ -103,5 +103,11 @@ suite("TypeScript", () => {
       "1\u00A923",
       `"1\\u00A923"`
     );
+    expectHoverEqual(
+      new TsStringParser(),
+      new vscode.Position(0, 0),
+      "1\u115523",
+      `"1\\u115523"`
+    );
   });
 });

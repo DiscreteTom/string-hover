@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.1.4
+
+- Fix(ts): fix `\u` escape sequence.
+
 ## v0.1.3
 
 - Fix(ts): fix all escape sequence, including `\x` and `\u`.

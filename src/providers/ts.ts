@@ -228,7 +228,7 @@ function evalTsString(quoted: string) {
         return String.fromCharCode(parseInt(match.slice(2), 16));
       } else {
         // match.startsWith("\\u")
-        return String.fromCharCode(parseInt(match.slice(4), 16));
+        return String.fromCharCode(parseInt(match.slice(2), 16));
       }
     }
   );
