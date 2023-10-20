@@ -58,8 +58,7 @@
     "pretest": "yarn test-compile && yarn lint",
     "test": "node ./out/test/runTest.js",
     "vscode:prepublish": "yarn test && yarn esbuild-base -- --minify",
-    "package": "vsce package",
-    "publish": "vsce publish"
+    "package": "vsce package"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
