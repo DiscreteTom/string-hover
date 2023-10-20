@@ -190,8 +190,7 @@ function evalTsString(quoted: string) {
     // remove the first quote
     1,
     // the string might be un-closed, so the last char might not be the quote.
-    // maybe the last char of the un-closed string is an escaped quote
-    quoted.at(-1) === quote && quoted.at(-2) !== "\\" ? -1 : undefined
+    quoted.at(-1) === quote ? -1 : undefined
   );
 
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#literals

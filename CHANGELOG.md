@@ -3,6 +3,7 @@
 ## v0.1.4
 
 - Fix(ts): fix `\u` escape sequence.
+- Fix(ts): fix `"\\"`.
 - Feat: support Rust lang.
 
 ## v0.1.3
