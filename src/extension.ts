@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { escapeMarkdownCodeBlock, profile } from "./utils";
+import { escapeMarkdownCodeBlock, profile, renderWhitespaces } from "./utils";
 import { config } from "./config";
 import { IStringParser } from "./model";
 import { JsonStringParser } from "./providers/json";
@@ -19,7 +19,7 @@ function registerStringHoverProvider(
 
       if (str !== undefined) {
         // the markdown result
-        const md = escapeMarkdownCodeBlock(str);
+        const md = escapeMarkdownCodeBlock(renderWhitespaces(str));
 
         if (config.debug) {
           console.log(md);

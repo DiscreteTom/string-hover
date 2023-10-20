@@ -5,6 +5,10 @@
 - Fix(ts): fix `\u` escape sequence.
 - Fix(ts): fix `"\\"`.
 - Feat: support Rust lang.
+- Feat: add settings to render whitespaces.
+  - `string-hover.renderNewlines`
+  - `string-hover.renderTabs`
+  - `string-hover.renderWhitespaces`
 
 ## v0.1.3
 

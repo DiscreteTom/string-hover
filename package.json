@@ -26,7 +26,28 @@
     "onLanguage:rust"
   ],
   "main": "./out/extension.js",
-  "contributes": {},
+  "contributes": {
+    "configuration": {
+      "title": "string-hover",
+      "properties": {
+        "string-hover.renderSpaces": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Whether to render spaces as `·`."
+        },
+        "string-hover.renderNewlines": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Whether to render `\\n` as `⏎\\n`."
+        },
+        "string-hover.renderTabs": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Whether to render `\\t` as `↦`."
+        }
+      }
+    }
+  },
   "scripts": {
     "vscode:prepublish": "yarn run compile",
     "compile": "tsc -p ./",

@@ -1,4 +1,5 @@
 import { config } from "./config";
+import * as vscode from "vscode";
 
 /**
  * Escape `` ` `` for markdown code block.
@@ -28,4 +29,17 @@ export function profile<R>(label: string, f: () => R) {
     console.timeEnd(label);
   }
   return res;
+}
+
+export function renderWhitespaces(s: string) {
+  if (config.renderNewlines) {
+    s = s.replace(/\n/g, "\u23CE\n");
+  }
+  if (config.renderTabs) {
+    s = s.replace(/\t/g, "\u21A6");
+  }
+  if (config.renderSpaces) {
+    s = s.replace(/ /g, "\xb7");
+  }
+  return s;
 }
