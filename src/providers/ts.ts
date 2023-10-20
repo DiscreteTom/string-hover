@@ -195,7 +195,7 @@ function evalTsString(quoted: string) {
 
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#literals
   // IMPORTANT! all escaped chars should be searched simultaneously!
-  // e.g. you should NOT search `\\` first then search `\n`
+  // e.g. you should NOT use `unquoted.replace(/\\\\/g, "\\").replace(/\\'/g, "'")...`
   return unquoted.replace(
     /(\\0|\\'|\\"|\\n|\\\\|\\r|\\v|\\t|\\b|\\f|\\\n|\\`|\\x([0-9a-fA-F]{2})|\\u([0-9a-fA-F]{4}))/g,
     (match) => {
