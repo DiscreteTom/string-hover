@@ -14,9 +14,7 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 
-# only include out/main.js built by esbuild
 out/**
-!out/main.min.js
 
 # ignore all dependencies since we use esbuild to bundle them
 node_modules/**
