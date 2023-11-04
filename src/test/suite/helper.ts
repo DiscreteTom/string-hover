@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { IStringParser } from "../../model";
+import type { IStringParser } from "../../model";
 import * as assert from "assert";
 
 export function expectHoverEqual(
@@ -47,8 +47,8 @@ function mockTextDocument(text: string): vscode.TextDocument {
       return res.join("");
     },
     getWordRangeAtPosition: (
-      position: vscode.Position,
-      regex?: RegExp | undefined
+      _position: vscode.Position,
+      _regex?: RegExp | undefined
     ) => undefined,
     isClosed: false,
     isDirty: false,
@@ -104,6 +104,7 @@ function mockTextDocument(text: string): vscode.TextDocument {
       }
       if (position.line > lines.length - 1) {
         // line overflow, return last line, last char
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         return new vscode.Position(lines.length - 1, lines.at(-1)!.length - 1);
       }
 
