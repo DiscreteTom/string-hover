@@ -72,6 +72,27 @@ suite("TypeScript", () => {
     );
   });
 
+  test("line continuation", () => {
+    expectHoverEqual(
+      new TsStringParser(),
+      new vscode.Position(0, 0),
+      "123456",
+      '"123\\\n456"'
+    );
+    expectHoverEqual(
+      new TsStringParser(),
+      new vscode.Position(0, 0),
+      "123456",
+      "'123\\\n456"
+    );
+    expectHoverEqual(
+      new TsStringParser(),
+      new vscode.Position(0, 0),
+      "123456",
+      "'123\\\n456"
+    );
+  });
+
   test("other escaped characters", () => {
     expectHoverEqual(
       new TsStringParser(),
@@ -108,6 +129,12 @@ suite("TypeScript", () => {
       new vscode.Position(0, 0),
       "1\u115523",
       `"1\\u115523"`
+    );
+    expectHoverEqual(
+      new TsStringParser(),
+      new vscode.Position(0, 0),
+      "1\u{2F804}23",
+      `"1\\u{2F804}23"`
     );
   });
 });
