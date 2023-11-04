@@ -1,14 +1,12 @@
-import * as vscode from "vscode";
+import type * as vscode from "vscode";
 import { Lexer } from "retsac";
 import { config } from "../config";
-import { IStringParser } from "../model";
+import type { IStringParser } from "../model";
 
-export class RustStringParser implements IStringParser {
-  private lexer: Lexer.Lexer<string, "" | "string" | "char" | "raw", never>;
-
-  constructor() {
-    this.lexer = new Lexer.Builder()
-      .ignore(/[^'"\/r]+/, Lexer.comment("//"), Lexer.comment("/*", "*/"), /\//)
+function buildLexer() {
+  return (
+    new Lexer.Builder()
+      .ignore(/[^'"/r]+/, Lexer.comment("//"), Lexer.comment("/*", "*/"), /\//)
       // https://doc.rust-lang.org/reference/tokens.html#character-and-string-literals
       .define({
         // including byte literals
@@ -50,7 +48,15 @@ export class RustStringParser implements IStringParser {
       })
       .ignore(/r/) // finally, ignore non-raw-string 'r'
       // TODO: do we need to handle rust macros?
-      .build({ debug: config.debug });
+      .build({ debug: config.debug })
+  );
+}
+
+export class RustStringParser implements IStringParser {
+  private lexer: ReturnType<typeof buildLexer>;
+
+  constructor() {
+    this.lexer = buildLexer();
   }
 
   parse(

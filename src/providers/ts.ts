@@ -1,18 +1,12 @@
-import * as vscode from "vscode";
+import type * as vscode from "vscode";
 import { Lexer } from "retsac";
 import { config } from "../config";
-import { IStringParser } from "../model";
+import type { IStringParser } from "../model";
 
-export class TsStringParser implements IStringParser {
-  private lexer: Lexer.Lexer<
-    string,
-    "" | "string" | "tempStrLeft" | "tempStrRight" | "tempStrMiddle",
-    { braceDepthStack: number[] }
-  >;
-
-  constructor() {
-    this.lexer = new Lexer.Builder()
-      .useState({
+function buildLexer() {
+  return (
+    new Lexer.Builder()
+      .state({
         // use braceDepthStack to calculate the depth of nested curly braces.
         // when a new template string starts, push 0 to the front of the stack.
         braceDepthStack: [0],
@@ -20,67 +14,86 @@ export class TsStringParser implements IStringParser {
       .ignore(
         // first, ignore comments & regex literals
         Lexer.comment("//"),
-        Lexer.comment("/*", "*/"),
-        Lexer.regexLiteral(),
+        Lexer.comment("/*", "*/")
+      )
+      .ignore(
+        Lexer.javascript.regexLiteral(),
         // then, ignore all chars except string-beginning,
         // slash (the beginning of comment & regex)
         // and curly braces (to calculate nested depth)
         // in one token (to optimize performance)
-        /[^"'`\/{}]+/,
+        /[^"'`/{}]+/,
         // then, ignore non-comment-or-regex slash
         /\//
         // now the rest must starts with a string
         // or curly braces
       )
-      // TODO: use Lexer.anonymous, https://github.com/DiscreteTom/retsac/issues/27
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      .define({ "": Lexer.exact("{") }, (a) =>
-        a.then(({ input }) => input.state.braceDepthStack[0]++)
-      )
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      .define({ "": Lexer.exact("}") }, (a) =>
-        a
-          // reject if no '{' before '}'
-          .reject(({ input }) => input.state.braceDepthStack[0] === 0)
-          .then(({ input }) => input.state.braceDepthStack[0]--)
+      .anonymous(
+        (a) =>
+          a
+            .from(Lexer.exact("{"))
+            .then(({ input }) => input.state.braceDepthStack[0]++),
+        (a) =>
+          a
+            .from(Lexer.exact("}"))
+            // reject if no '{' before '}'
+            .reject(({ input }) => input.state.braceDepthStack[0] === 0)
+            .then(({ input }) => input.state.braceDepthStack[0]--)
       )
       // simple strings
       .define({ string: [Lexer.stringLiteral(`"`), Lexer.stringLiteral(`'`)] })
       // template strings
       .define(
         // TODO: https://github.com/DiscreteTom/retsac/issues/28
-        { string: /`(?:\\.|[^\\`$])*(?:\$\{|`|$)/ },
-        // reject if ends with '${'
-        (a) => a.reject(({ output }) => output.content.endsWith("${"))
+        {
+          string: (a) =>
+            a
+              .from(/`(?:\\.|[^\\`$])*(?:\$\{|`|$)/)
+              // reject if ends with '${'
+              .reject(({ output }) => output.content.endsWith("${")),
+        }
       )
-      .define({ tempStrLeft: /`(?:\\.|[^\\`$])*(?:\$\{|`|$)/ }, (a) =>
-        a
-          // reject if not ends with '${'
-          .reject(({ output }) => !output.content.endsWith("${"))
-          .then(({ input }) => input.state.braceDepthStack.unshift(0))
-      )
-      .define({ tempStrRight: /\}(?:\\.|[^\\`$])*(?:\$\{|`|$)/ }, (a) =>
-        a
-          .reject(
-            ({ output, input }) =>
-              input.state.braceDepthStack[0] !== 0 || // brace not close
-              input.state.braceDepthStack.length === 1 || // not in template string
-              output.content.endsWith("${") // should be tempStrMiddle
-          )
-          .then(({ input }) => input.state.braceDepthStack.shift())
-      )
-      .define(
-        { tempStrMiddle: /\}(?:\\.|[^\\`$])*(?:\$\{|`|$)/ },
-        // reject if not in template string
-        (a) =>
-          a.reject(
-            ({ input, output }) =>
-              input.state.braceDepthStack[0] !== 0 || // brace not close
-              input.state.braceDepthStack.length === 1 || // not in template string
-              !output.content.endsWith("${") // should be tempStrRight
-          )
-      )
-      .build({ debug: config.debug });
+      .define({
+        tempStrLeft: (a) =>
+          a
+            .from(/`(?:\\.|[^\\`$])*(?:\$\{|`|$)/)
+            // reject if not ends with '${'
+            .reject(({ output }) => !output.content.endsWith("${"))
+            .then(({ input }) => input.state.braceDepthStack.unshift(0)),
+      })
+      .define({
+        tempStrRight: (a) =>
+          a
+            .from(/\}(?:\\.|[^\\`$])*(?:\$\{|`|$)/)
+            .reject(
+              ({ output, input }) =>
+                input.state.braceDepthStack[0] !== 0 || // brace not close
+                input.state.braceDepthStack.length === 1 || // not in template string
+                output.content.endsWith("${") // should be tempStrMiddle
+            )
+            .then(({ input }) => input.state.braceDepthStack.shift()),
+      })
+      .define({
+        tempStrMiddle: (a) =>
+          a
+            .from(/\}(?:\\.|[^\\`$])*(?:\$\{|`|$)/)
+            // reject if not in template string
+            .reject(
+              ({ input, output }) =>
+                input.state.braceDepthStack[0] !== 0 || // brace not close
+                input.state.braceDepthStack.length === 1 || // not in template string
+                !output.content.endsWith("${") // should be tempStrRight
+            ),
+      })
+      .build({ debug: config.debug })
+  );
+}
+
+export class TsStringParser implements IStringParser {
+  private lexer: ReturnType<typeof buildLexer>;
+
+  constructor() {
+    this.lexer = buildLexer();
   }
 
   parse(

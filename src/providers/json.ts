@@ -1,18 +1,24 @@
-import * as vscode from "vscode";
+import type * as vscode from "vscode";
 import { Lexer } from "retsac";
 import { config } from "../config";
-import { IStringParser } from "../model";
+import type { IStringParser } from "../model";
 
-export class JsonStringParser implements IStringParser {
-  private lexer: Lexer.Lexer<string, "" | "string", never>;
-
-  constructor() {
-    this.lexer = new Lexer.Builder()
+function buildLexer() {
+  return (
+    new Lexer.Builder()
       // perf: ignore all non-string-beginning chars in one token
       // since JSON doesn't allow multi-line string & comments
       .ignore(/[^"]+/)
       .define({ string: Lexer.stringLiteral(`"`) })
-      .build({ debug: config.debug });
+      .build({ debug: config.debug })
+  );
+}
+
+export class JsonStringParser implements IStringParser {
+  private lexer: ReturnType<typeof buildLexer>;
+
+  constructor() {
+    this.lexer = buildLexer();
   }
 
   parse(

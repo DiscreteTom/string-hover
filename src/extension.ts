@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { escapeMarkdownCodeBlock, profile, renderWhitespaces } from "./utils";
 import { config } from "./config";
-import { IStringParser } from "./model";
+import type { IStringParser } from "./model";
 import { JsonStringParser } from "./providers/json";
 import { JsoncStringParser } from "./providers/jsonc";
 import { TsStringParser } from "./providers/ts";
@@ -43,4 +43,4 @@ export function activate(context: vscode.ExtensionContext) {
   );
 }
 
-export function deactivate() {}
+// export function deactivate() {}

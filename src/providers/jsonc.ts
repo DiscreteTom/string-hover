@@ -2,21 +2,25 @@ import * as vscode from "vscode";
 import { Lexer } from "retsac";
 import { config } from "../config";
 import { evalJsonString } from "./json";
-import { IStringParser } from "../model";
+import type { IStringParser } from "../model";
+
+function buildLexer() {
+  return new Lexer.Builder()
+    .ignore(
+      Lexer.comment("//"),
+      Lexer.comment("/*", "*/"),
+      // perf: ignore all non-string-beginning-or-slash chars in one token
+      /[^"/]+/
+    )
+    .define({ string: Lexer.stringLiteral(`"`) })
+    .build({ debug: config.debug });
+}
 
 export class JsoncStringParser implements IStringParser {
-  private lexer: Lexer.Lexer<string, "" | "string", never>;
+  private lexer: ReturnType<typeof buildLexer>;
 
   constructor() {
-    this.lexer = new Lexer.Builder()
-      .ignore(
-        Lexer.comment("//"),
-        Lexer.comment("/*", "*/"),
-        // perf: ignore all non-string-beginning-or-slash chars in one token
-        /[^"\/]+/
-      )
-      .define({ string: Lexer.stringLiteral(`"`) })
-      .build({ debug: config.debug });
+    this.lexer = buildLexer();
   }
 
   parse(
