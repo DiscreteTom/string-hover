@@ -34,4 +34,19 @@ suite("JSON", () => {
       `"1\\"23"`
     );
   });
+
+  test("unclosed string", () => {
+    expectHoverEqual(
+      new JsonStringParser(),
+      new vscode.Position(0, 0),
+      '1"',
+      `"1\\"`
+    );
+    expectHoverEqual(
+      new JsonStringParser(),
+      new vscode.Position(0, 0),
+      '1"',
+      `"1\\"\n`
+    );
+  });
 });

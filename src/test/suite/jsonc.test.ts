@@ -64,4 +64,19 @@ suite("JSON with comments", () => {
       `//"1\\n23"`
     );
   });
+
+  test("unclosed string", () => {
+    expectHoverEqual(
+      new JsoncStringParser(),
+      new vscode.Position(0, 0),
+      '1"',
+      `"1\\"`
+    );
+    expectHoverEqual(
+      new JsoncStringParser(),
+      new vscode.Position(0, 0),
+      '1"',
+      `"1\\"\n`
+    );
+  });
 });

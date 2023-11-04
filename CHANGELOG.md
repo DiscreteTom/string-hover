@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.1.7
+
+- Feat(json/jsonc): support unclosed string.
+
 ## v0.1.6
 
 - Add icon.

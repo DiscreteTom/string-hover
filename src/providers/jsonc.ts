@@ -64,7 +64,13 @@ export class JsoncStringParser implements IStringParser {
           return;
         }
 
-        return evalJsonString(token.content);
+        return evalJsonString(
+          token.data.unclosed
+            ? token.content.endsWith("\n") // TODO: https://github.com/DiscreteTom/retsac/issues/32
+              ? token.content.slice(0, -1) + '"'
+              : token.content + '"'
+            : token.content
+        );
       }
 
       // perf: if current token's end is after the position, no need to continue
