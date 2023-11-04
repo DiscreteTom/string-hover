@@ -1,5 +1,4 @@
 import { config } from "./config";
-import * as vscode from "vscode";
 
 /**
  * Escape `` ` `` for markdown code block.
