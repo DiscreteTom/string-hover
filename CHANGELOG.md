@@ -3,6 +3,7 @@
 ## v0.1.7
 
 - Feat(json/jsonc): support unclosed string.
+- Feat(ts): support unclosed string for non-interpolated string.
 - Fix(ts): support line continuation. [#1](https://github.com/DiscreteTom/string-hover/issues/1)
 - Fix(ts): support unicode code point escaped. [#2](https://github.com/DiscreteTom/string-hover/issues/2)
 
