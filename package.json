@@ -26,7 +26,7 @@
     "onLanguage:typescript",
     "onLanguage:rust"
   ],
-  "main": "./out/main.min.js",
+  "main": "./dist/main.min.js",
   "contributes": {
     "configuration": {
       "title": "string-hover",
@@ -50,14 +50,13 @@
     }
   },
   "scripts": {
-    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/main.min.js --external:vscode --format=cjs --platform=node",
-    "compile": "yarn esbuild-base --sourcemap",
-    "watch": "yarn esbuild-base --sourcemap --watch",
     "lint": "eslint src --ext ts",
     "test-compile": "tsc -p ./",
     "pretest": "yarn test-compile && yarn lint",
     "test": "node ./out/test/runTest.js",
-    "vscode:prepublish": "yarn test && yarn esbuild-base --minify",
+    "build": "esbuild ./src/extension.ts --sourcemap --minify --bundle --outfile=dist/main.min.js --external:vscode --format=cjs --platform=node",
+    "watch": "yarn build --watch",
+    "vscode:prepublish": "yarn test && yarn build",
     "package": "vsce package"
   },
   "devDependencies": {
