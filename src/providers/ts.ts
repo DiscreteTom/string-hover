@@ -187,10 +187,14 @@ export class TsStringParser implements IStringParser {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const tokens = tempStrStack.pop()!;
         tokens.push(token);
+        const unclosed =
+          // TODO: https://github.com/DiscreteTom/retsac/issues/34
+          (token as typeof token & { data: { kind: "tempStrRight" } }).data
+            .unclosed;
         if (targetTempStrIndex === tempStrStack.length) {
           // got the target template string, calculate string value
           const quoted = tokens.map((t) => t.content).join("...");
-          return Lexer.javascript.evalString(quoted); // TODO: handle unclosed
+          return Lexer.javascript.evalString(unclosed ? quoted + "`" : quoted);
         }
       }
 

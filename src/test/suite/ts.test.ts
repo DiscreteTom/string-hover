@@ -137,4 +137,31 @@ suite("TypeScript", () => {
       `"1\\u{2F804}23"`
     );
   });
+
+  test("unclosed string", () => {
+    expectHoverEqual(
+      new TsStringParser(),
+      new vscode.Position(0, 0),
+      `123"`,
+      `"123\\"`
+    );
+    expectHoverEqual(
+      new TsStringParser(),
+      new vscode.Position(0, 0),
+      '123"',
+      `'123\\"`
+    );
+    expectHoverEqual(
+      new TsStringParser(),
+      new vscode.Position(0, 0),
+      '123"',
+      '`123\\"'
+    );
+    expectHoverEqual(
+      new TsStringParser(),
+      new vscode.Position(0, 0),
+      "123 ${...}",
+      "`123 ${ 123 }"
+    );
+  });
 });
