@@ -6,6 +6,7 @@
 - Feat(ts): support unclosed string for non-interpolated string.
 - Fix(ts): support line continuation. [#1](https://github.com/DiscreteTom/string-hover/issues/1)
 - Fix(ts): support unicode code point escaped. [#2](https://github.com/DiscreteTom/string-hover/issues/2)
+- Perf(ts): prevent re-scanning interpolated string with retsac's multi-kind action.
 
 ## v0.1.6
 

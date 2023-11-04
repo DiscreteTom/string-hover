@@ -43,52 +43,61 @@ function buildLexer() {
       // simple strings
       .define({ string: [Lexer.stringLiteral(`"`), Lexer.stringLiteral(`'`)] })
       // template strings
-      .define(
-        // TODO: https://github.com/DiscreteTom/retsac/issues/28
-        {
-          string: (a) =>
-            a
-              .from(/`(?:\\.|[^\\`$])*(?:\$\{|`|$)/)
-              // reject if ends with '${'
-              .reject(({ output }) => output.content.endsWith("${"))
-              .data(({ output }) => ({
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                unclosed: !output.content.split(/\\./).at(-1)!.endsWith("`"),
-              })),
-        }
+      .select((a) =>
+        a
+          .from(/`(?:\\.|[^\\`$])*(?:\$\{|`|$)/)
+          // TODO: https://github.com/DiscreteTom/retsac/issues/34
+          .data(({ output }) =>
+            // if ends with '`', even it is escaped, it's a simple string (maybe unclosed)
+            output.content.endsWith("`")
+              ? {
+                  // treat as a simple string
+                  kind: "string" as const,
+                  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                  unclosed: !output.content.split(/\\./).at(-1)!.endsWith("`"),
+                }
+              : {
+                  kind: "tempStrLeft" as const,
+                }
+          )
+          .then(({ input, output }) => {
+            if (output.data.kind === "tempStrLeft") {
+              input.state.braceDepthStack.unshift(0);
+            }
+          })
+          .kinds("string", "tempStrLeft")
+          .map(({ output }) => output.data.kind)
       )
-      .define({
-        tempStrLeft: (a) =>
-          a
-            .from(/`(?:\\.|[^\\`$])*(?:\$\{|`|$)/)
-            // reject if not ends with '${'
-            .reject(({ output }) => !output.content.endsWith("${"))
-            .then(({ input }) => input.state.braceDepthStack.unshift(0)),
-      })
-      .define({
-        tempStrRight: (a) =>
-          a
-            .from(/\}(?:\\.|[^\\`$])*(?:\$\{|`|$)/)
-            .reject(
-              ({ output, input }) =>
-                input.state.braceDepthStack[0] !== 0 || // brace not close
-                input.state.braceDepthStack.length === 1 || // not in template string
-                output.content.endsWith("${") // should be tempStrMiddle
-            )
-            .then(({ input }) => input.state.braceDepthStack.shift()),
-      })
-      .define({
-        tempStrMiddle: (a) =>
-          a
-            .from(/\}(?:\\.|[^\\`$])*(?:\$\{|`|$)/)
-            // reject if not in template string
-            .reject(
-              ({ input, output }) =>
-                input.state.braceDepthStack[0] !== 0 || // brace not close
-                input.state.braceDepthStack.length === 1 || // not in template string
-                !output.content.endsWith("${") // should be tempStrRight
-            ),
-      })
+      .select((a) =>
+        a
+          .from(/\}(?:\\.|[^\\`$])*(?:\$\{|`|$)/)
+          .reject(
+            ({ input }) =>
+              input.state.braceDepthStack[0] !== 0 || // brace not close
+              input.state.braceDepthStack.length === 1 // not in template string
+          )
+          .data((ctx) =>
+            // if ends with '`', even it is escaped, it's a tempStrRight (maybe unclosed)
+            ctx.output.content.endsWith("`")
+              ? {
+                  kind: "tempStrRight" as const,
+                  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                  unclosed: !ctx.output.content
+                    .split(/\\./)
+                    .at(-1)!
+                    .endsWith("`"),
+                }
+              : {
+                  kind: "tempStrMiddle" as const,
+                }
+          )
+          .then(({ input, output }) => {
+            if (output.data.kind === "tempStrRight")
+              input.state.braceDepthStack.shift();
+          })
+          .kinds("tempStrRight", "tempStrMiddle")
+          .map((ctx) => ctx.output.data.kind)
+      )
       .build({ debug: config.debug })
   );
 }
