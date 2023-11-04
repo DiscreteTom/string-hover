@@ -108,6 +108,7 @@ export class RustStringParser implements IStringParser {
         } else {
           // raw string, remove the prefix and suffix
           const start = /^r#*"/;
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           const res = start.exec(token.content)!;
           return token.content.slice(res[0].length, -(res[0].length - 1));
         }

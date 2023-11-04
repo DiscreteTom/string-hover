@@ -168,8 +168,10 @@ export class TsStringParser implements IStringParser {
       if (token.kind === "tempStrLeft") {
         tempStrStack.push([token]);
       } else if (token.kind === "tempStrMiddle") {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         tempStrStack.at(-1)!.push(token);
       } else if (token.kind === "tempStrRight") {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const tokens = tempStrStack.pop()!;
         tokens.push(token);
         if (targetTempStrIndex === tempStrStack.length) {
