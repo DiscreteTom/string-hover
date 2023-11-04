@@ -47,19 +47,19 @@ function buildLexer() {
         a
           .from(/`(?:\\.|[^\\`$])*(?:\$\{|`|$)/)
           // TODO: https://github.com/DiscreteTom/retsac/issues/34
-          .data(({ output }) =>
-            // if ends with '`', even it is escaped, it's a simple string (maybe unclosed)
-            output.content.endsWith("`")
+          .data(({ output }) => {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            const unescapedTail = output.content.split(/\\./).at(-1)!;
+            return unescapedTail.endsWith("${")
               ? {
-                  // treat as a simple string
-                  kind: "string" as const,
-                  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                  unclosed: !output.content.split(/\\./).at(-1)!.endsWith("`"),
-                }
-              : {
                   kind: "tempStrLeft" as const,
                 }
-          )
+              : {
+                  // treat as a simple string, maybe unclosed
+                  kind: "string" as const,
+                  unclosed: !unescapedTail.endsWith("`"),
+                };
+          })
           .then(({ input, output }) => {
             if (output.data.kind === "tempStrLeft") {
               input.state.braceDepthStack.unshift(0);
@@ -76,21 +76,19 @@ function buildLexer() {
               input.state.braceDepthStack[0] !== 0 || // brace not close
               input.state.braceDepthStack.length === 1 // not in template string
           )
-          .data((ctx) =>
-            // if ends with '`', even it is escaped, it's a tempStrRight (maybe unclosed)
-            ctx.output.content.endsWith("`")
+          .data((ctx) => {
+            // TODO: https://github.com/DiscreteTom/retsac/issues/34
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            const unescapedTail = ctx.output.content.split(/\\./).at(-1)!;
+            return unescapedTail.endsWith("${")
               ? {
-                  kind: "tempStrRight" as const,
-                  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                  unclosed: !ctx.output.content
-                    .split(/\\./)
-                    .at(-1)!
-                    .endsWith("`"),
-                }
-              : {
                   kind: "tempStrMiddle" as const,
                 }
-          )
+              : {
+                  kind: "tempStrRight" as const,
+                  unclosed: !unescapedTail.endsWith("`"),
+                };
+          })
           .then(({ input, output }) => {
             if (output.data.kind === "tempStrRight")
               input.state.braceDepthStack.shift();
