@@ -43,7 +43,7 @@ function buildLexer() {
       // simple strings
       .define({ string: [Lexer.stringLiteral(`"`), Lexer.stringLiteral(`'`)] })
       // template strings
-      .select((a) =>
+      .append((a) =>
         a
           .from(/`(?:\\.|[^\\`$])*(?:\$\{|`|$)/)
           // TODO: https://github.com/DiscreteTom/retsac/issues/34
@@ -66,9 +66,9 @@ function buildLexer() {
             }
           })
           .kinds("string", "tempStrLeft")
-          .map(({ output }) => output.data.kind)
+          .select(({ output }) => output.data.kind)
       )
-      .select((a) =>
+      .append((a) =>
         a
           .from(/\}(?:\\.|[^\\`$])*(?:\$\{|`|$)/)
           .reject(
@@ -94,7 +94,7 @@ function buildLexer() {
               input.state.braceDepthStack.shift();
           })
           .kinds("tempStrRight", "tempStrMiddle")
-          .map((ctx) => ctx.output.data.kind)
+          .select((ctx) => ctx.output.data.kind)
       )
       .build({ debug: config.debug })
   );
