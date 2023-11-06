@@ -14,9 +14,7 @@ function buildLexer() {
       .ignore(
         // first, ignore comments & regex literals
         Lexer.comment("//"),
-        Lexer.comment("/*", "*/")
-      )
-      .ignore(
+        Lexer.comment("/*", "*/"),
         Lexer.javascript.regexLiteral(),
         // then, ignore all chars except string-beginning,
         // slash (the beginning of comment & regex)
@@ -46,27 +44,26 @@ function buildLexer() {
       .append((a) =>
         a
           .from(/`(?:\\.|[^\\`$])*(?:\$\{|`|$)/)
-          // TODO: https://github.com/DiscreteTom/retsac/issues/34
-          .data(({ output }) => {
+          .data(({ output }) => ({
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            const unescapedTail = output.content.split(/\\./).at(-1)!;
-            return unescapedTail.endsWith("${")
-              ? {
-                  kind: "tempStrLeft" as const,
-                }
-              : {
-                  // treat as a simple string, maybe unclosed
-                  kind: "string" as const,
-                  unclosed: !unescapedTail.endsWith("`"),
-                };
+            unescapedTail: output.content.split(/\\./).at(-1)!,
+          }))
+          .kinds("string", "tempStrLeft")
+          .select(({ output }) =>
+            output.data.unescapedTail.endsWith("${") ? "tempStrLeft" : "string"
+          )
+          .map({
+            string: ({ output }) => ({
+              // treat as a simple string, maybe unclosed
+              unclosed: !output.data.unescapedTail.endsWith("`"),
+            }),
+            tempStrLeft: () => undefined,
           })
           .then(({ input, output }) => {
-            if (output.data.kind === "tempStrLeft") {
+            if (output.kind === "tempStrLeft") {
               input.state.braceDepthStack.unshift(0);
             }
           })
-          .kinds("string", "tempStrLeft")
-          .select(({ output }) => output.data.kind)
       )
       .append((a) =>
         a
@@ -76,25 +73,26 @@ function buildLexer() {
               input.state.braceDepthStack[0] !== 0 || // brace not close
               input.state.braceDepthStack.length === 1 // not in template string
           )
-          .data((ctx) => {
-            // TODO: https://github.com/DiscreteTom/retsac/issues/34
+          .data(({ output }) => ({
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            const unescapedTail = ctx.output.content.split(/\\./).at(-1)!;
-            return unescapedTail.endsWith("${")
-              ? {
-                  kind: "tempStrMiddle" as const,
-                }
-              : {
-                  kind: "tempStrRight" as const,
-                  unclosed: !unescapedTail.endsWith("`"),
-                };
+            unescapedTail: output.content.split(/\\./).at(-1)!,
+          }))
+          .kinds("tempStrRight", "tempStrMiddle")
+          .select((ctx) =>
+            ctx.output.data.unescapedTail.endsWith("${")
+              ? "tempStrMiddle"
+              : "tempStrRight"
+          )
+          .map({
+            tempStrMiddle: () => undefined,
+            tempStrRight: (ctx) => ({
+              unclosed: !ctx.output.data.unescapedTail.endsWith("`"),
+            }),
           })
           .then(({ input, output }) => {
-            if (output.data.kind === "tempStrRight")
+            if (output.kind === "tempStrRight")
               input.state.braceDepthStack.shift();
           })
-          .kinds("tempStrRight", "tempStrMiddle")
-          .select((ctx) => ctx.output.data.kind)
       )
       .build({ debug: config.debug })
   );
