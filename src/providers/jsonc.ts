@@ -65,11 +65,7 @@ export class JsoncStringParser implements IStringParser {
         }
 
         return evalJsonString(
-          token.data.unclosed
-            ? token.content.endsWith("\n") // TODO: https://github.com/DiscreteTom/retsac/issues/32
-              ? token.content.slice(0, -1) + '"'
-              : token.content + '"'
-            : token.content
+          token.data.unclosed ? token.content + '"' : token.content
         );
       }
 
