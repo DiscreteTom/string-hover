@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
-import { expectHoverEqual } from "./helper";
-import { JsoncStringParser } from "../../providers/jsonc";
+import { expectHoverEqual } from "../helper";
+import { JsoncStringParser } from "../../../providers/jsonc";
 
 suite("JSON with comments", () => {
   test("simple string", () => {

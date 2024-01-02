@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
-import { expectHoverEqual } from "./helper";
-import { JsonStringParser } from "../../providers/json";
+import { expectHoverEqual } from "../helper";
+import { JsonStringParser } from "../../../providers/json";
 
 // ref: https://www.json.org/json-en.html
 
