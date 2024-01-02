@@ -23,7 +23,7 @@ function buildLexer() {
         /[^"'`/{}]+/,
         // then, ignore non-comment-or-regex slash
         /\//
-        // now the rest must starts with a string
+        // now the rest must starts with a string's quote
         // or curly braces
       )
       .anonymous(
@@ -34,63 +34,42 @@ function buildLexer() {
         (a) =>
           a
             .from(Lexer.exact("}"))
-            // reject if no '{' before '}'
-            .reject(({ input }) => input.state.braceDepthStack[0] === 0)
+            // reject before exec if no '{' before '}'
+            .prevent((input) => input.state.braceDepthStack[0] === 0)
             .then(({ input }) => input.state.braceDepthStack[0]--)
       )
       // simple strings
-      .define({ string: [Lexer.stringLiteral(`"`), Lexer.stringLiteral(`'`)] })
+      .define({ string: Lexer.javascript.simpleStringLiteral() })
       // template strings
       .append((a) =>
         a
-          .from(/`(?:\\.|[^\\`$])*(?:\$\{|`|$)/)
-          .data(({ output }) => ({
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            unescapedTail: output.content.split(/\\./).at(-1)!,
-          }))
+          .from(Lexer.javascript.templateStringLiteralLeft())
           .kinds("string", "tempStrLeft")
           .select(({ output }) =>
-            output.data.unescapedTail.endsWith("${") ? "tempStrLeft" : "string"
+            output.data.kind === "simple" ? "string" : "tempStrLeft"
           )
-          .map({
-            string: ({ output }) => ({
-              // treat as a simple string, maybe unclosed
-              unclosed: !output.data.unescapedTail.endsWith("`"),
-            }),
-            tempStrLeft: () => undefined,
-          })
           .then(({ input, output }) => {
             if (output.kind === "tempStrLeft") {
+              // push 0 to the front of the stack
               input.state.braceDepthStack.unshift(0);
             }
           })
       )
       .append((a) =>
         a
-          .from(/\}(?:\\.|[^\\`$])*(?:\$\{|`|$)/)
-          .reject(
-            ({ input }) =>
+          .from(Lexer.javascript.templateStringLiteralRight())
+          .prevent(
+            (input) =>
               input.state.braceDepthStack[0] !== 0 || // brace not close
               input.state.braceDepthStack.length === 1 // not in template string
           )
-          .data(({ output }) => ({
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            unescapedTail: output.content.split(/\\./).at(-1)!,
-          }))
           .kinds("tempStrRight", "tempStrMiddle")
           .select((ctx) =>
-            ctx.output.data.unescapedTail.endsWith("${")
-              ? "tempStrMiddle"
-              : "tempStrRight"
+            ctx.output.data.kind === "middle" ? "tempStrMiddle" : "tempStrRight"
           )
-          .map({
-            tempStrMiddle: () => undefined,
-            tempStrRight: (ctx) => ({
-              unclosed: !ctx.output.data.unescapedTail.endsWith("`"),
-            }),
-          })
           .then(({ input, output }) => {
             if (output.kind === "tempStrRight")
+              // pop the stack
               input.state.braceDepthStack.shift();
           })
       )
@@ -110,7 +89,7 @@ export class TsStringParser implements IStringParser {
     position: vscode.Position,
     cancel: vscode.CancellationToken
   ) {
-    // we have to get the whole document because multi-line string is allowed
+    // we have to get the whole document because multi-line string is allowed in js/ts
     const text = document.getText();
     const offset = document.offsetAt(position);
 
@@ -156,9 +135,7 @@ export class TsStringParser implements IStringParser {
           return;
         }
 
-        return Lexer.javascript.evalString(
-          token.data.unclosed ? token.content + token.content[0] : token.content
-        );
+        return token.data.value;
       }
 
       // if the hover is in a template string, set targetTempStrIndex
@@ -185,7 +162,7 @@ export class TsStringParser implements IStringParser {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const tokens = tempStrStack.pop()!;
         tokens.push(token);
-        const unclosed = token.data.unclosed;
+        const unclosed = token.data.invalid?.unclosed;
         if (targetTempStrIndex === tempStrStack.length) {
           // got the target template string, calculate string value
           const quoted = tokens.map((t) => t.content).join("...");
