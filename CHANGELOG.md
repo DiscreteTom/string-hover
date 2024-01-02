@@ -2,7 +2,7 @@
 
 ## v0.1.8
 
-- Feat(json/jsonc): error handling for invalid escape sequence with retsac v0.15.0 built-in json utils.
+- Feat(json/jsonc/ts): error handling for invalid escape sequence with retsac v0.15.0 built-in string utils.
 - Perf(ts): apply `Action.prevent` and `Lexer.javascript.simpleStringLiteral` from retsac v0.15.0.
 
 ## v0.1.7
