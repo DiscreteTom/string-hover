@@ -2,7 +2,7 @@
 
 ## v0.1.8
 
-- Feat(json): error handling for invalid escape sequence with retsac v0.15.0 built-in json utils.
+- Feat(json/jsonc): error handling for invalid escape sequence with retsac v0.15.0 built-in json utils.
 
 ## v0.1.7
 
