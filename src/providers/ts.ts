@@ -95,14 +95,15 @@ export class TsStringParser implements IStringParser {
 
     this.lexer.reset().feed(text);
 
-    const tempStrStack = [] as NonNullable<
-      ReturnType<(typeof this.lexer)["lex"]>
-    >[][];
+    // we have to store a stack of template string values for nested template strings
+    const tempStrValueStack = [] as string[][];
+
     /**
      * `undefined` if the hover is not in a template string.
      * Otherwise, it's the index of the template string in `tempStrStack`.
      */
     let targetTempStrIndex: number | undefined = undefined;
+
     while (true) {
       // just return if cancellation is requested
       if (cancel.isCancellationRequested) {
@@ -126,7 +127,7 @@ export class TsStringParser implements IStringParser {
 
         // don't show hover if the string is not escaped and no newline in it
         if (
-          token.content.indexOf("\\") === -1 &&
+          token.data.escapes.length === 0 &&
           token.content.indexOf("\n") === -1
         ) {
           if (config.debug) {
@@ -146,27 +147,26 @@ export class TsStringParser implements IStringParser {
       ) {
         targetTempStrIndex =
           token.kind === "tempStrLeft"
-            ? tempStrStack.length
-            : tempStrStack.length - 1;
+            ? tempStrValueStack.length // don't -1 because we haven't push the token to the stack
+            : tempStrValueStack.length - 1;
         if (config.debug) {
           console.log(`set target temp string index: ${targetTempStrIndex}`);
         }
       }
 
       if (token.kind === "tempStrLeft") {
-        tempStrStack.push([token]);
+        tempStrValueStack.push([token.data.value]);
       } else if (token.kind === "tempStrMiddle") {
+        // tempStrStack won't be empty because we reject tempStrMiddle when not in a template string
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        tempStrStack.at(-1)!.push(token);
+        tempStrValueStack.at(-1)!.push(token.data.value);
       } else if (token.kind === "tempStrRight") {
+        // tempStrStack won't be empty because we reject tempStrMiddle when not in a template string
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const tokens = tempStrStack.pop()!;
-        tokens.push(token);
-        const unclosed = token.data.invalid?.unclosed;
-        if (targetTempStrIndex === tempStrStack.length) {
+        const tokenValues = tempStrValueStack.pop()!;
+        if (targetTempStrIndex === tempStrValueStack.length) {
           // got the target template string, calculate string value
-          const quoted = tokens.map((t) => t.content).join("...");
-          return Lexer.javascript.evalString(unclosed ? quoted + "`" : quoted);
+          return [...tokenValues, token.data.value].join("${...}");
         }
       }
 
@@ -175,7 +175,7 @@ export class TsStringParser implements IStringParser {
       // otherwise the hover target may be the tempStrMiddle/tempStrRight which is after the position
       if (
         token.kind === "string" &&
-        tempStrStack.length === 0 &&
+        tempStrValueStack.length === 0 &&
         token.start + token.content.length > offset
       ) {
         return;
