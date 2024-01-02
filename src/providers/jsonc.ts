@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 import { Lexer } from "retsac";
 import { config } from "../config";
-import { evalJsonString } from "./json";
 import type { IStringParser } from "../model";
 
 function buildLexer() {
@@ -12,7 +11,7 @@ function buildLexer() {
       // perf: ignore all non-string-beginning-or-slash chars in one token
       /[^"/]+/
     )
-    .define({ string: Lexer.stringLiteral(`"`) })
+    .define({ string: Lexer.json.stringLiteral() })
     .build({ debug: config.debug });
 }
 
@@ -57,20 +56,14 @@ export class JsoncStringParser implements IStringParser {
         // got a string token, and the position is in the token
 
         // don't show hover if the string is not escaped
-        if (token.content.indexOf("\\") === -1) {
+        if (token.data.escapes.length === 0) {
           if (config.debug) {
             console.log(`got simple: ${token.content}`);
           }
           return;
         }
 
-        return evalJsonString(
-          token.data.unclosed
-            ? token.content.endsWith("\n") // TODO: https://github.com/DiscreteTom/retsac/issues/32
-              ? token.content.slice(0, -1) + '"'
-              : token.content + '"'
-            : token.content
-        );
+        return token.data.value;
       }
 
       // perf: if current token's end is after the position, no need to continue

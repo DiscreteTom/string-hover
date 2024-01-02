@@ -3,7 +3,7 @@ import { expectHoverEqual } from "./helper";
 import { TsStringParser } from "../../providers/ts";
 
 suite("TypeScript", () => {
-  test("simple string", () => {
+  test("simple string without escapes", () => {
     expectHoverEqual(
       new TsStringParser(),
       new vscode.Position(0, 0),
@@ -21,6 +21,27 @@ suite("TypeScript", () => {
       new vscode.Position(0, 0),
       undefined,
       "`123`"
+    );
+  });
+
+  test("simple string with escapes", () => {
+    expectHoverEqual(
+      new TsStringParser(),
+      new vscode.Position(0, 0),
+      "123\n",
+      `"123\\n"`
+    );
+    expectHoverEqual(
+      new TsStringParser(),
+      new vscode.Position(0, 0),
+      "123\n",
+      `'123\\n'`
+    );
+    expectHoverEqual(
+      new TsStringParser(),
+      new vscode.Position(0, 0),
+      "123\n",
+      "`123\\n`"
     );
   });
 

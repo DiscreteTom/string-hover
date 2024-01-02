@@ -9,7 +9,7 @@ function buildLexer() {
       // perf: ignore all non-string-beginning chars in one token
       // since JSON doesn't allow multi-line string & comments
       .ignore(/[^"]+/)
-      .define({ string: Lexer.stringLiteral(`"`) })
+      .define({ string: Lexer.json.stringLiteral() })
       .build({ debug: config.debug })
   );
 }
@@ -53,16 +53,14 @@ export class JsonStringParser implements IStringParser {
         // got a string token, and the position is in the token
 
         // don't show hover if the string is not escaped
-        if (token.content.indexOf("\\") === -1) {
+        if (token.data.escapes.length === 0) {
           if (config.debug) {
             console.log(`got unescaped string: ${token.content}`);
           }
           return;
         }
 
-        return evalJsonString(
-          token.data.unclosed ? token.content + '"' : token.content
-        );
+        return token.data.value;
       }
 
       // perf: if current token's end is after the position, no need to continue
@@ -72,20 +70,5 @@ export class JsonStringParser implements IStringParser {
 
       // else, got token but not string, continue
     }
-  }
-}
-
-export function evalJsonString(jsonStr: string) {
-  try {
-    // JSON.parse() is used to eval escape sequences like \n
-    const res = JSON.parse(jsonStr);
-    if (typeof res !== "string") {
-      console.error(`Parsed JSON is not string: ${JSON.stringify(jsonStr)}`);
-      return;
-    }
-    return res;
-  } catch {
-    console.error(`Failed to parse JSON string: ${JSON.stringify(jsonStr)}`);
-    return;
   }
 }

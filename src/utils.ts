@@ -4,6 +4,7 @@ import { config } from "./config";
  * Escape `` ` `` for markdown code block.
  * @see https://github.com/microsoft/vscode/issues/193746
  */
+// TODO: remove this after https://github.com/microsoft/vscode/pull/197523 is merged
 export function escapeMarkdownCodeBlock(code: string) {
   const longestMatchLength =
     code.match(/`+/g)?.reduce((a, b) => (a.length > b.length ? a : b)).length ??

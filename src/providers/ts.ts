@@ -14,9 +14,7 @@ function buildLexer() {
       .ignore(
         // first, ignore comments & regex literals
         Lexer.comment("//"),
-        Lexer.comment("/*", "*/")
-      )
-      .ignore(
+        Lexer.comment("/*", "*/"),
         Lexer.javascript.regexLiteral(),
         // then, ignore all chars except string-beginning,
         // slash (the beginning of comment & regex)
@@ -25,7 +23,7 @@ function buildLexer() {
         /[^"'`/{}]+/,
         // then, ignore non-comment-or-regex slash
         /\//
-        // now the rest must starts with a string
+        // now the rest must starts with a string's quote
         // or curly braces
       )
       .anonymous(
@@ -36,65 +34,44 @@ function buildLexer() {
         (a) =>
           a
             .from(Lexer.exact("}"))
-            // reject if no '{' before '}'
-            .reject(({ input }) => input.state.braceDepthStack[0] === 0)
+            // reject before exec if no '{' before '}'
+            .prevent((input) => input.state.braceDepthStack[0] === 0)
             .then(({ input }) => input.state.braceDepthStack[0]--)
       )
       // simple strings
-      .define({ string: [Lexer.stringLiteral(`"`), Lexer.stringLiteral(`'`)] })
+      .define({ string: Lexer.javascript.simpleStringLiteral() })
       // template strings
-      .select((a) =>
+      .append((a) =>
         a
-          .from(/`(?:\\.|[^\\`$])*(?:\$\{|`|$)/)
-          // TODO: https://github.com/DiscreteTom/retsac/issues/34
-          .data(({ output }) => {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            const unescapedTail = output.content.split(/\\./).at(-1)!;
-            return unescapedTail.endsWith("${")
-              ? {
-                  kind: "tempStrLeft" as const,
-                }
-              : {
-                  // treat as a simple string, maybe unclosed
-                  kind: "string" as const,
-                  unclosed: !unescapedTail.endsWith("`"),
-                };
-          })
+          .from(Lexer.javascript.templateStringLiteralLeft())
+          .kinds("string", "tempStrLeft")
+          .select(({ output }) =>
+            output.data.kind === "simple" ? "string" : "tempStrLeft"
+          )
           .then(({ input, output }) => {
-            if (output.data.kind === "tempStrLeft") {
+            if (output.kind === "tempStrLeft") {
+              // push 0 to the front of the stack
               input.state.braceDepthStack.unshift(0);
             }
           })
-          .kinds("string", "tempStrLeft")
-          .map(({ output }) => output.data.kind)
       )
-      .select((a) =>
+      .append((a) =>
         a
-          .from(/\}(?:\\.|[^\\`$])*(?:\$\{|`|$)/)
-          .reject(
-            ({ input }) =>
+          .from(Lexer.javascript.templateStringLiteralRight())
+          .prevent(
+            (input) =>
               input.state.braceDepthStack[0] !== 0 || // brace not close
               input.state.braceDepthStack.length === 1 // not in template string
           )
-          .data((ctx) => {
-            // TODO: https://github.com/DiscreteTom/retsac/issues/34
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            const unescapedTail = ctx.output.content.split(/\\./).at(-1)!;
-            return unescapedTail.endsWith("${")
-              ? {
-                  kind: "tempStrMiddle" as const,
-                }
-              : {
-                  kind: "tempStrRight" as const,
-                  unclosed: !unescapedTail.endsWith("`"),
-                };
-          })
+          .kinds("tempStrRight", "tempStrMiddle")
+          .select((ctx) =>
+            ctx.output.data.kind === "middle" ? "tempStrMiddle" : "tempStrRight"
+          )
           .then(({ input, output }) => {
-            if (output.data.kind === "tempStrRight")
+            if (output.kind === "tempStrRight")
+              // pop the stack
               input.state.braceDepthStack.shift();
           })
-          .kinds("tempStrRight", "tempStrMiddle")
-          .map((ctx) => ctx.output.data.kind)
       )
       .build({ debug: config.debug })
   );
@@ -112,20 +89,21 @@ export class TsStringParser implements IStringParser {
     position: vscode.Position,
     cancel: vscode.CancellationToken
   ) {
-    // we have to get the whole document because multi-line string is allowed
+    // we have to get the whole document because multi-line string is allowed in js/ts
     const text = document.getText();
     const offset = document.offsetAt(position);
 
     this.lexer.reset().feed(text);
 
-    const tempStrStack = [] as NonNullable<
-      ReturnType<(typeof this.lexer)["lex"]>
-    >[][];
+    // we have to store a stack of template string values for nested template strings
+    const tempStrValueStack = [] as string[][];
+
     /**
      * `undefined` if the hover is not in a template string.
      * Otherwise, it's the index of the template string in `tempStrStack`.
      */
     let targetTempStrIndex: number | undefined = undefined;
+
     while (true) {
       // just return if cancellation is requested
       if (cancel.isCancellationRequested) {
@@ -149,7 +127,7 @@ export class TsStringParser implements IStringParser {
 
         // don't show hover if the string is not escaped and no newline in it
         if (
-          token.content.indexOf("\\") === -1 &&
+          token.data.escapes.length === 0 &&
           token.content.indexOf("\n") === -1
         ) {
           if (config.debug) {
@@ -158,9 +136,7 @@ export class TsStringParser implements IStringParser {
           return;
         }
 
-        return Lexer.javascript.evalString(
-          token.data.unclosed ? token.content + token.content[0] : token.content
-        );
+        return token.data.value;
       }
 
       // if the hover is in a template string, set targetTempStrIndex
@@ -171,30 +147,26 @@ export class TsStringParser implements IStringParser {
       ) {
         targetTempStrIndex =
           token.kind === "tempStrLeft"
-            ? tempStrStack.length
-            : tempStrStack.length - 1;
+            ? tempStrValueStack.length // don't -1 because we haven't push the token to the stack
+            : tempStrValueStack.length - 1;
         if (config.debug) {
           console.log(`set target temp string index: ${targetTempStrIndex}`);
         }
       }
 
       if (token.kind === "tempStrLeft") {
-        tempStrStack.push([token]);
+        tempStrValueStack.push([token.data.value]);
       } else if (token.kind === "tempStrMiddle") {
+        // tempStrStack won't be empty because we reject tempStrMiddle when not in a template string
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        tempStrStack.at(-1)!.push(token);
+        tempStrValueStack.at(-1)!.push(token.data.value);
       } else if (token.kind === "tempStrRight") {
+        // tempStrStack won't be empty because we reject tempStrMiddle when not in a template string
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const tokens = tempStrStack.pop()!;
-        tokens.push(token);
-        const unclosed =
-          // TODO: https://github.com/DiscreteTom/retsac/issues/34
-          (token as typeof token & { data: { kind: "tempStrRight" } }).data
-            .unclosed;
-        if (targetTempStrIndex === tempStrStack.length) {
+        const tokenValues = tempStrValueStack.pop()!;
+        if (targetTempStrIndex === tempStrValueStack.length) {
           // got the target template string, calculate string value
-          const quoted = tokens.map((t) => t.content).join("...");
-          return Lexer.javascript.evalString(unclosed ? quoted + "`" : quoted);
+          return [...tokenValues, token.data.value].join("${...}");
         }
       }
 
@@ -203,7 +175,7 @@ export class TsStringParser implements IStringParser {
       // otherwise the hover target may be the tempStrMiddle/tempStrRight which is after the position
       if (
         token.kind === "string" &&
-        tempStrStack.length === 0 &&
+        tempStrValueStack.length === 0 &&
         token.start + token.content.length > offset
       ) {
         return;

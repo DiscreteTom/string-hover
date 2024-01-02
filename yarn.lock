@@ -323,10 +323,10 @@
     "@typescript-eslint/types" "5.62.0"
     eslint-visitor-keys "^3.3.0"
 
-"@vscode/test-electron@^2.2.3":
-  version "2.3.5"
-  resolved "https://registry.npmmirror.com/@vscode/test-electron/-/test-electron-2.3.5.tgz#c472c5bdce1329aeb4762b8aa7a2cbe7aa783aac"
-  integrity sha512-lAW7nQ0HuPqJnGJrtCzEKZCICtRizeP6qNanyCrjmdCOAAWjX3ixiG8RVPwqsYPQBWLPgYuE12qQlwXsOR/2fQ==
+"@vscode/test-electron@^2.3.8":
+  version "2.3.8"
+  resolved "https://registry.npmmirror.com/@vscode/test-electron/-/test-electron-2.3.8.tgz#06a7c50b38cfac0ede833905e088d55c61cd12d3"
+  integrity sha512-b4aZZsBKtMGdDljAsOPObnAi7+VWIaYl3ylCz1jTs+oV6BZ4TNHcVNC3xUn0azPeszBmwSBDQYfFESIaUQnrOg==
   dependencies:
     http-proxy-agent "^4.0.1"
     https-proxy-agent "^5.0.0"
@@ -1264,10 +1264,10 @@ resolve-from@^4.0.0:
   resolved "https://registry.npmmirror.com/resolve-from/-/resolve-from-4.0.0.tgz#4abcd852ad32dd7baabfe9b40e00a36db5f392e6"
   integrity sha512-pb/MYmXstAkysRFx8piNI1tGFNQIFA3vkE3Gq4EuA1dF6gHp/+vgZqsCGJapvy8N3Q+4o7FwvquPJcnZ7RYy4g==
 
-retsac@^0.13.1:
-  version "0.13.1"
-  resolved "https://registry.npmmirror.com/retsac/-/retsac-0.13.1.tgz#725c06d3de6241c7360573750e51ebf82eb26905"
-  integrity sha512-bxcxRC+mrYR/FhuUz1TofpOms3BFnsb2fWRE4pYk1a8yHM6XSTrwyuNM8LlPGM3UqY1tvZW1jxWjpTyWYS3hLA==
+retsac@^0.15.0:
+  version "0.15.0"
+  resolved "https://registry.npmmirror.com/retsac/-/retsac-0.15.0.tgz#a98e214d72555c092a6e3400f0c360f2ae8d7bee"
+  integrity sha512-ArzCEQ0nNrK3vbmni1NbVllBIXeud9fW+HC2XRVPEZgcUem+tlrueYJR0PU6BTJdtBFghCdgRT5/1/QPgQFwTQ==
 
 reusify@^1.0.4:
   version "1.0.4"
