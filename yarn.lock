@@ -1264,10 +1264,10 @@ resolve-from@^4.0.0:
   resolved "https://registry.npmmirror.com/resolve-from/-/resolve-from-4.0.0.tgz#4abcd852ad32dd7baabfe9b40e00a36db5f392e6"
   integrity sha512-pb/MYmXstAkysRFx8piNI1tGFNQIFA3vkE3Gq4EuA1dF6gHp/+vgZqsCGJapvy8N3Q+4o7FwvquPJcnZ7RYy4g==
 
-retsac@^0.14.0:
-  version "0.14.0"
-  resolved "https://registry.npmmirror.com/retsac/-/retsac-0.14.0.tgz#d9321446bd67df96b0b1be3e9f25bcf4a2fa9a5f"
-  integrity sha512-ZoXa7bjNsai/BwLWPd1/o5GiOyx+VmfdlQqJzESn6uPOfDvfi6xhUirfWIhrsIHZC20UvR6A4KitpMHvVCv5qg==
+retsac@^0.15.0:
+  version "0.15.0"
+  resolved "https://registry.npmmirror.com/retsac/-/retsac-0.15.0.tgz#a98e214d72555c092a6e3400f0c360f2ae8d7bee"
+  integrity sha512-ArzCEQ0nNrK3vbmni1NbVllBIXeud9fW+HC2XRVPEZgcUem+tlrueYJR0PU6BTJdtBFghCdgRT5/1/QPgQFwTQ==
 
 reusify@^1.0.4:
   version "1.0.4"
