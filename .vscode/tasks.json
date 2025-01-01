@@ -4,8 +4,12 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "type": "npm",
-      "script": "watch",
+      "label": "build",
+      "type": "shell",
+      "command": "yarn include:wasm && yarn watch",
+      "windows": {
+        "command": "yarn include:wasm:win && yarn watch"
+      },
       "problemMatcher": "$esbuild-watch",
       "isBackground": true,
       "presentation": {
