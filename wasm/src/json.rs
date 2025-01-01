@@ -100,7 +100,7 @@ fn create_eval() -> C!(Vec<CharOrByteRange>) {
       * (
         ..,
         || vec![], // TODO: optimize this, prevent vec or place in heap?
-        |v, mut acc| {
+        |v, mut acc, _| {
           acc.push(v);
           acc
         },
