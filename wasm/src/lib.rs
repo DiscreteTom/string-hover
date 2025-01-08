@@ -12,7 +12,21 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn parse_json_str_at(line: &str, column: usize) -> Option<String> {
-  utils::set_panic_hook();
-  json::parse_json_str_at(line, column)
+pub struct JsonStrParser {
+  inner: json::JsonStrParser,
+}
+
+#[wasm_bindgen]
+impl JsonStrParser {
+  #[wasm_bindgen(constructor)]
+  pub fn new() -> Self {
+    utils::set_panic_hook();
+    Self {
+      inner: json::JsonStrParser::new(),
+    }
+  }
+
+  pub fn parse(&self, line: &str, column: usize) -> Option<String> {
+    self.inner.parse(line, column)
+  }
 }

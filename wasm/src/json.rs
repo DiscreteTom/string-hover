@@ -1,12 +1,10 @@
 use in_str::in_str;
 use whitehole::{
+  action::{Action, Input},
   combinator::{eat, next},
   parser::Builder,
   range::{Range, WithRange},
-  C,
 };
-
-use crate::log;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 enum JsonToken {
@@ -14,7 +12,7 @@ enum JsonToken {
   Others,
 }
 
-fn create_entry() -> C!(WithRange<JsonToken>) {
+fn create_search_entry() -> Box<dyn Action<Value = WithRange<JsonToken>>> {
   // perf: ignore all non-string-beginning chars in one token
   // since JSON doesn't allow multi-line string & comments
   let others = (next(|c| c != '"') * (1..)).bind(JsonToken::Others);
@@ -33,28 +31,35 @@ fn create_entry() -> C!(WithRange<JsonToken>) {
   }
   .bind(JsonToken::String);
 
-  (others | string).range()
+  let entry = (others | string).range();
+
+  Box::new(entry)
 }
 
-fn search(entry: C!(WithRange<JsonToken>), line: &str, column: usize) -> Option<&str> {
+fn search<'text>(
+  entry: &dyn Action<Value = WithRange<JsonToken>>,
+  line: &'text str,
+  column: usize,
+) -> Option<&'text str> {
   let mut parser = Builder::new().entry(entry).build(line);
 
   while let Some(output) = parser.parse() {
-    // ignore non-string tokens
-    if output.value.data != JsonToken::String {
-      continue;
-    }
-
-    // check if the matched string beyond the cursor
+    // check if the matched content already beyond the cursor
+    // TODO: accumulate chars instead of counting every time
     let start = line[..output.value.range.start].chars().count();
     if start > column {
       break; // already beyond the cursor, early stop
     }
 
+    // ignore non-string tokens
+    if output.value.data != JsonToken::String {
+      continue;
+    }
+
     // check if the cursor is in the matched string
     let content = &line[output.value.range];
     let end = start + content.chars().count();
-    if end < column {
+    if end <= column {
       continue; // not in the matched string, continue
     }
 
@@ -69,7 +74,7 @@ enum CharOrByteRange {
   ByteRange(Range),
 }
 
-fn create_eval() -> C!(Vec<CharOrByteRange>) {
+fn create_eval_entry() -> Box<dyn Action<(), String, Value = ()>> {
   let escape = {
     let simple = {
       eat('"').bind('"')
@@ -99,33 +104,62 @@ fn create_eval() -> C!(Vec<CharOrByteRange>) {
     (escape | non_escape)
       * (
         ..,
-        || vec![], // TODO: optimize this, prevent vec or place in heap?
-        |v, mut acc, _| {
-          acc.push(v);
-          acc
+        || {},
+        |v, _acc, input: Input<&mut (), &mut String>| match v {
+          CharOrByteRange::Char(c) => input.heap.push(c),
+          CharOrByteRange::ByteRange(r) => input.heap.push_str(&input.instant().text()[r]),
         },
       )
   }
-  .tuple();
+  .prepare(|input| input.heap.clear());
 
-  { eat('"') + body_optional + '"' }.map(|(v,)| v)
+  Box::new(eat('"') + body_optional + '"')
 }
 
-fn eval(entry: C!(Vec<CharOrByteRange>), content: &str) -> String {
-  let mut parser = Builder::new().entry(entry).build(content);
-  let mut s = String::new();
+fn eval(entry: &dyn Action<(), String, Value = ()>, content: &str, buffer: String) -> String {
+  let mut parser = Builder::new().heap(buffer).entry(entry).build(content);
+  parser.parse().unwrap();
+  parser.heap
+}
 
-  for v in parser.parse().unwrap().value {
-    match v {
-      CharOrByteRange::Char(c) => s.push(c),
-      CharOrByteRange::ByteRange(r) => s.push_str(&content[r]),
+pub struct JsonStrParser {
+  search: Box<dyn Action<Value = WithRange<JsonToken>>>,
+  eval: Box<dyn Action<(), String, Value = ()>>,
+}
+
+impl JsonStrParser {
+  pub fn new() -> Self {
+    Self {
+      search: create_search_entry(),
+      eval: create_eval_entry(),
     }
   }
 
-  s
+  pub fn parse(&self, line: &str, column: usize) -> Option<String> {
+    let content = search(&self.search, line, column)?;
+    Some(eval(
+      &self.eval,
+      content,
+      String::with_capacity(content.len()),
+    ))
+  }
 }
 
-pub fn parse_json_str_at(line: &str, column: usize) -> Option<String> {
-  // TODO: reuse entry instead of creating it every time
-  Some(eval(create_eval(), search(create_entry(), line, column)?))
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_json_str_parser() {
+    let parser = JsonStrParser::new();
+    assert_eq!(
+      parser.parse(r#"{"key": "value"}"#, 8),
+      Some("value".to_string())
+    );
+    assert_eq!(
+      parser.parse(r#"{"key": "value"}"#, 14),
+      Some("value".to_string())
+    );
+    assert_eq!(parser.parse(r#"{"key": "value"}"#, 15), None);
+  }
 }
