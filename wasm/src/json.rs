@@ -1,7 +1,7 @@
 use in_str::in_str;
 use whitehole::{
   action::{Action, Input},
-  combinator::{eat, next},
+  combinator::{eat, next, till},
   parser::Builder,
   range::{Range, WithRange},
 };
@@ -36,31 +36,68 @@ fn create_search_entry() -> Box<dyn Action<Value = WithRange<JsonToken>>> {
   Box::new(entry)
 }
 
+// TODO: error handling
+fn create_search_entry_jsonc() -> Box<dyn Action<Value = WithRange<JsonToken>>> {
+  let others = {
+    // perf: ignore all non-comments-nor-string chars in one token
+    let non_comments_nor_string = next(|c| c != '"' && c != '/') * (1..);
+
+    let comments = {
+      let single_line = eat("//") + (till('\n') | till(()));
+      let multi_line = eat("/*") + (till("*/") | till(()));
+      single_line | multi_line
+    };
+
+    non_comments_nor_string | comments
+  }
+  .bind(JsonToken::Others);
+
+  // TODO: merge dup code
+  let string = {
+    let escape = {
+      let simple = next(in_str!("\"\\/bfnrt"));
+      let hex = eat('u') + next(|c| c.is_ascii_hexdigit()) * 4;
+      eat('\\') + (simple | hex)
+    };
+    let non_escape =
+      next(|c| c != '"' && c != '\\' && matches!(c, '\u{0020}'..='\u{10ffff}')) * (1..);
+    let body_optional = (escape | non_escape) * ..;
+    eat('"') + body_optional + '"'
+  }
+  .bind(JsonToken::String);
+
+  let entry = (others | string).range();
+
+  Box::new(entry)
+}
+
 fn search<'text>(
   entry: &dyn Action<Value = WithRange<JsonToken>>,
-  line: &'text str,
-  column: usize,
+  text: &'text str,
+  offset: usize,
 ) -> Option<&'text str> {
-  let mut parser = Builder::new().entry(entry).build(line);
+  let mut parser = Builder::new().entry(entry).build(text);
 
+  let mut parsed_chars = 0;
   while let Some(output) = parser.parse() {
-    // check if the matched content already beyond the cursor
-    // TODO: accumulate chars instead of counting every time
-    let start = line[..output.value.range.start].chars().count();
-    if start > column {
-      break; // already beyond the cursor, early stop
-    }
+    // update parsed chars
+    let start = parsed_chars;
+    let content = &text[output.value.range];
+    parsed_chars = start + content.chars().count();
 
     // ignore non-string tokens
     if output.value.data != JsonToken::String {
       continue;
     }
 
-    // check if the cursor is in the matched string
-    let content = &line[output.value.range];
-    let end = start + content.chars().count();
-    if end <= column {
+    // check if the cursor is before the matched string
+    if parsed_chars <= offset {
       continue; // not in the matched string, continue
+    }
+
+    // check if the matched content already beyond the cursor
+    if start > offset {
+      break; // already beyond the cursor, early stop
     }
 
     return Some(content);
@@ -124,6 +161,7 @@ fn eval(entry: &dyn Action<(), String, Value = ()>, content: &str, buffer: Strin
 
 pub struct JsonStrParser {
   search: Box<dyn Action<Value = WithRange<JsonToken>>>,
+  search_jsonc: Box<dyn Action<Value = WithRange<JsonToken>>>,
   eval: Box<dyn Action<(), String, Value = ()>>,
 }
 
@@ -131,12 +169,23 @@ impl JsonStrParser {
   pub fn new() -> Self {
     Self {
       search: create_search_entry(),
+      search_jsonc: create_search_entry_jsonc(),
       eval: create_eval_entry(),
     }
   }
 
   pub fn parse(&self, line: &str, column: usize) -> Option<String> {
     let content = search(&self.search, line, column)?;
+    Some(eval(
+      &self.eval,
+      content,
+      String::with_capacity(content.len()),
+    ))
+  }
+
+  pub fn parse_jsonc(&self, text: &str, offset: usize) -> Option<String> {
+    // TODO: remove dup code
+    let content = search(&self.search_jsonc, text, offset)?;
     Some(eval(
       &self.eval,
       content,

@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { Lexer } from "retsac";
 import { config } from "../config";
 import type { IStringParser } from "../model";
+import { JsonStrParser } from "../../wasm/pkg/wasm";
 
 function buildLexer() {
   return new Lexer.Builder()
@@ -17,9 +18,11 @@ function buildLexer() {
 
 export class JsoncStringParser implements IStringParser {
   private lexer: ReturnType<typeof buildLexer>;
+  private parser: JsonStrParser;
 
   constructor() {
     this.lexer = buildLexer();
+    this.parser = new JsonStrParser();
   }
 
   parse(
@@ -32,6 +35,11 @@ export class JsoncStringParser implements IStringParser {
     // we can't only get the current line because the line maybe in a comment.
     const text = document.getText(new vscode.Range(0, 0, position.line + 1, 0));
     const offset = document.offsetAt(position);
+
+    console.time("wasm jsonc");
+    const output = this.parser.parse_jsonc(text, offset);
+    console.timeEnd("wasm jsonc");
+    console.log(output);
 
     this.lexer.reset().feed(text);
 

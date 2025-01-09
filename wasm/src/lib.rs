@@ -29,4 +29,8 @@ impl JsonStrParser {
   pub fn parse(&self, line: &str, column: usize) -> Option<String> {
     self.inner.parse(line, column)
   }
+
+  pub fn parse_jsonc(&self, text: &str, offset: usize) -> Option<String> {
+    self.inner.parse_jsonc(text, offset)
+  }
 }
