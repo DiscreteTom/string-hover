@@ -138,15 +138,13 @@ fn create_eval_entry() -> Box<dyn Action<(), String, Value = ()>> {
       .select(|ctx| CharOrByteRange::ByteRange(ctx.range()));
 
   let body_optional = {
-    (escape | non_escape)
-      * (
-        ..,
-        || {},
-        |v, _acc, input: Input<&mut (), &mut String>| match v {
-          CharOrByteRange::Char(c) => input.heap.push(c),
-          CharOrByteRange::ByteRange(r) => input.heap.push_str(&input.instant().text()[r]),
-        },
-      )
+    (escape | non_escape).fold(
+      || {},
+      |v, _acc, input: Input<_, &mut String>| match v {
+        CharOrByteRange::Char(c) => input.heap.push(c),
+        CharOrByteRange::ByteRange(r) => input.heap.push_str(&input.instant().text()[r]),
+      },
+    ) * (..)
   }
   .prepare(|input| input.heap.clear());
 
