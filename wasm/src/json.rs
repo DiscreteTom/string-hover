@@ -15,7 +15,6 @@ enum JsonToken {
 fn common_entry(
   others: Combinator<impl Action + 'static>,
 ) -> Box<dyn Action<Value = WithRange<JsonToken>>> {
-  // TODO: error handling for string
   let string = {
     let body_optional = {
       let escape = {
@@ -42,7 +41,6 @@ fn create_search_entry() -> Box<dyn Action<Value = WithRange<JsonToken>>> {
   common_entry(next(|c| c != '"') * (1..))
 }
 
-// TODO: error handling
 fn create_search_entry_jsonc() -> Box<dyn Action<Value = WithRange<JsonToken>>> {
   common_entry({
     // perf: ignore all non-comments-nor-string chars in one token
