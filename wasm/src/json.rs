@@ -1,7 +1,7 @@
 use in_str::in_str;
 use whitehole::{
-  action::{Action, Input},
-  combinator::{eat, next, till},
+  action::{Action, Input, Output},
+  combinator::{eat, next, till, wrap, Combinator},
   parser::Builder,
   range::{Range, WithRange},
 };
@@ -12,33 +12,39 @@ enum JsonToken {
   Others,
 }
 
-fn create_search_entry() -> Box<dyn Action<Value = WithRange<JsonToken>>> {
-  // perf: ignore all non-string-beginning chars in one token
-  // since JSON doesn't allow multi-line string & comments
-  let others = (next(|c| c != '"') * (1..)).bind(JsonToken::Others);
-
+fn common_entry(
+  others: Combinator<impl Action + 'static>,
+) -> Box<dyn Action<Value = WithRange<JsonToken>>> {
   // TODO: error handling for string
   let string = {
-    let escape = {
-      let simple = next(in_str!("\"\\/bfnrt"));
-      let hex = eat('u') + next(|c| c.is_ascii_hexdigit()) * 4;
-      eat('\\') + (simple | hex)
+    let body_optional = {
+      let escape = {
+        let simple = next(in_str!("\"\\/bfnrt"));
+        let hex = eat('u') + next(|c| c.is_ascii_hexdigit()) * 4;
+        eat('\\') + (simple | hex)
+      };
+      let non_escape =
+        next(|c| c != '"' && c != '\\' && matches!(c, '\u{0020}'..='\u{10ffff}')) * (1..);
+      (escape | non_escape) * ..
     };
-    let non_escape =
-      next(|c| c != '"' && c != '\\' && matches!(c, '\u{0020}'..='\u{10ffff}')) * (1..);
-    let body_optional = (escape | non_escape) * ..;
     eat('"') + body_optional + '"'
   }
   .bind(JsonToken::String);
 
-  let entry = (others | string).range();
+  let entry = (others.bind(JsonToken::Others) | string).range();
 
   Box::new(entry)
 }
 
+fn create_search_entry() -> Box<dyn Action<Value = WithRange<JsonToken>>> {
+  // perf: ignore all non-string-beginning chars in one token
+  // since JSON doesn't allow multi-line string & comments
+  common_entry(next(|c| c != '"') * (1..))
+}
+
 // TODO: error handling
 fn create_search_entry_jsonc() -> Box<dyn Action<Value = WithRange<JsonToken>>> {
-  let others = {
+  common_entry({
     // perf: ignore all non-comments-nor-string chars in one token
     let non_comments_nor_string = next(|c| c != '"' && c != '/') * (1..);
 
@@ -49,26 +55,7 @@ fn create_search_entry_jsonc() -> Box<dyn Action<Value = WithRange<JsonToken>>> 
     };
 
     non_comments_nor_string | comments
-  }
-  .bind(JsonToken::Others);
-
-  // TODO: merge dup code
-  let string = {
-    let escape = {
-      let simple = next(in_str!("\"\\/bfnrt"));
-      let hex = eat('u') + next(|c| c.is_ascii_hexdigit()) * 4;
-      eat('\\') + (simple | hex)
-    };
-    let non_escape =
-      next(|c| c != '"' && c != '\\' && matches!(c, '\u{0020}'..='\u{10ffff}')) * (1..);
-    let body_optional = (escape | non_escape) * ..;
-    eat('"') + body_optional + '"'
-  }
-  .bind(JsonToken::String);
-
-  let entry = (others | string).range();
-
-  Box::new(entry)
+  })
 }
 
 fn search<'text>(
@@ -112,32 +99,47 @@ enum CharOrByteRange {
 }
 
 fn create_eval_entry() -> Box<dyn Action<(), String, Value = ()>> {
-  let escape = {
-    let simple = {
-      eat('"').bind('"')
-        | eat('\\').bind('\\')
-        | eat('/').bind('/')
-        | eat('b').bind('\u{0008}')
-        | eat('f').bind('\u{000c}')
-        | eat('n').bind('\n')
-        | eat('r').bind('\r')
-        | eat('t').bind('\t')
-    }
-    .tuple();
-
-    let hex = eat('u') + { next(|c| c.is_ascii_hexdigit()) * 4 }
-      .select(|ctx| char::from_u32(u32::from_str_radix(ctx.content(), 16).unwrap()).unwrap())
+  let body_optional = {
+    let escape = {
+      let simple = {
+        wrap(|input| {
+          input
+            .instant()
+            .rest()
+            .chars()
+            .next()
+            .and_then(|c| {
+              Some(match c {
+                '"' | '\\' | '/' => c,
+                'b' => '\u{0008}',
+                'f' => '\u{000c}',
+                'n' => '\n',
+                'r' => '\r',
+                't' => '\t',
+                _ => return None,
+              })
+            })
+            .map(|c| Output {
+              digested: 1,
+              value: c,
+            })
+        })
+      }
       .tuple();
 
-    eat('\\') + (simple | hex)
-  }
-  .map(|(c,)| CharOrByteRange::Char(c));
+      let hex = eat('u') + { next(|c| c.is_ascii_hexdigit()) * 4 }
+        .select(|ctx| char::from_u32(u32::from_str_radix(ctx.content(), 16).unwrap()).unwrap())
+        .tuple();
 
-  let non_escape =
-    { next(|c| c != '"' && c != '\\' && matches!(c, '\u{0020}'..='\u{10ffff}')) * (1..) }
-      .select(|ctx| CharOrByteRange::ByteRange(ctx.range()));
+      eat('\\') + (simple | hex)
+    }
+    .pop()
+    .map(CharOrByteRange::Char);
 
-  let body_optional = {
+    let non_escape =
+      { next(|c| c != '"' && c != '\\' && matches!(c, '\u{0020}'..='\u{10ffff}')) * (1..) }
+        .select(|ctx| CharOrByteRange::ByteRange(ctx.range()));
+
     (escape | non_escape).fold(
       || {},
       |v, _acc, input: Input<_, &mut String>| match v {
