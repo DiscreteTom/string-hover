@@ -175,20 +175,24 @@ impl JsonStrParser {
   }
 
   pub fn parse(&self, line: &str, column: usize) -> Option<String> {
-    let content = search(&self.search, line, column)?;
-    Some(eval(
-      &self.eval,
-      content,
-      String::with_capacity(content.len()),
-    ))
+    self.parse_common(&self.search, line, column)
   }
 
   pub fn parse_jsonc(&self, text: &str, offset: usize) -> Option<String> {
-    // TODO: remove dup code
-    let content = search(&self.search_jsonc, text, offset)?;
+    self.parse_common(&self.search_jsonc, text, offset)
+  }
+
+  fn parse_common(
+    &self,
+    search_entry: &dyn Action<Value = WithRange<JsonToken>>,
+    text: &str,
+    offset: usize,
+  ) -> Option<String> {
+    let content = search(search_entry, text, offset)?;
     Some(eval(
       &self.eval,
       content,
+      // perf: pre-allocate the buffer with a maximum possible length
       String::with_capacity(content.len()),
     ))
   }
