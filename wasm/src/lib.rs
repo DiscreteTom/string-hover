@@ -26,11 +26,11 @@ impl JsonStrParser {
     }
   }
 
-  pub fn parse(&self, line: &str, column: usize) -> Option<String> {
-    self.inner.parse(line, column)
+  pub fn parse(&self, line: &str, column: usize, require_escape: bool) -> Option<String> {
+    self.inner.parse(line, column, require_escape)
   }
 
-  pub fn parse_jsonc(&self, text: &str, offset: usize) -> Option<String> {
-    self.inner.parse_jsonc(text, offset)
+  pub fn parse_jsonc(&self, text: &str, offset: usize, require_escape: bool) -> Option<String> {
+    self.inner.parse_jsonc(text, offset, require_escape)
   }
 }

@@ -36,8 +36,11 @@ export class JsoncStringParser implements IStringParser {
     const text = document.getText(new vscode.Range(0, 0, position.line + 1, 0));
     const offset = document.offsetAt(position);
 
+    // TODO: move to config
+    const requireEscape = true;
+
     console.time("wasm jsonc");
-    const output = this.parser.parse_jsonc(text, offset);
+    const output = this.parser.parse_jsonc(text, offset, requireEscape);
     console.timeEnd("wasm jsonc");
     console.log(output);
 

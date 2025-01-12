@@ -8,7 +8,7 @@ use whitehole::{
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 enum JsonToken {
-  String,
+  String { escaped: bool },
   Others,
 }
 
@@ -24,11 +24,13 @@ fn common_entry(
       };
       let non_escape =
         next(|c| c != '"' && c != '\\' && matches!(c, '\u{0020}'..='\u{10ffff}')) * (1..);
-      (escape | non_escape) * ..
+
+      (escape.bind(true) | non_escape.bind(false)).fold(|| false, |v, acc, _| v || acc) * ..
     };
-    eat('"') + body_optional + '"'
+    eat('"') + body_optional.tuple() + '"'
   }
-  .bind(JsonToken::String);
+  .pop()
+  .map(|escaped| JsonToken::String { escaped });
 
   let entry = (others.bind(JsonToken::Others) | string).range();
 
@@ -60,6 +62,7 @@ fn search<'text>(
   entry: &dyn Action<Value = WithRange<JsonToken>>,
   text: &'text str,
   offset: usize,
+  require_escape: bool,
 ) -> Option<&'text str> {
   let mut parser = Builder::new().entry(entry).build(text);
 
@@ -71,7 +74,12 @@ fn search<'text>(
     parsed_chars = start + content.chars().count();
 
     // ignore non-string tokens
-    if output.value.data != JsonToken::String {
+    let JsonToken::String { escaped } = output.value.data else {
+      continue;
+    };
+
+    // ignore non-escaped strings if require escape
+    if !escaped && require_escape {
       continue;
     }
 
@@ -171,12 +179,12 @@ impl JsonStrParser {
     }
   }
 
-  pub fn parse(&self, line: &str, column: usize) -> Option<String> {
-    self.parse_common(&self.search, line, column)
+  pub fn parse(&self, line: &str, column: usize, require_escape: bool) -> Option<String> {
+    self.parse_common(&self.search, line, column, require_escape)
   }
 
-  pub fn parse_jsonc(&self, text: &str, offset: usize) -> Option<String> {
-    self.parse_common(&self.search_jsonc, text, offset)
+  pub fn parse_jsonc(&self, text: &str, offset: usize, require_escape: bool) -> Option<String> {
+    self.parse_common(&self.search_jsonc, text, offset, require_escape)
   }
 
   fn parse_common(
@@ -184,8 +192,9 @@ impl JsonStrParser {
     search_entry: &dyn Action<Value = WithRange<JsonToken>>,
     text: &str,
     offset: usize,
+    require_escape: bool,
   ) -> Option<String> {
-    let content = search(search_entry, text, offset)?;
+    let content = search(search_entry, text, offset, require_escape)?;
     Some(eval(
       &self.eval,
       content,
@@ -203,13 +212,14 @@ mod tests {
   fn test_json_str_parser() {
     let parser = JsonStrParser::new();
     assert_eq!(
-      parser.parse(r#"{"key": "value"}"#, 8),
+      parser.parse(r#"{"key": "value"}"#, 8, false),
       Some("value".to_string())
     );
     assert_eq!(
-      parser.parse(r#"{"key": "value"}"#, 14),
+      parser.parse(r#"{"key": "value"}"#, 14, false),
       Some("value".to_string())
     );
-    assert_eq!(parser.parse(r#"{"key": "value"}"#, 15), None);
+    assert_eq!(parser.parse(r#"{"key": "value"}"#, 14, true), None);
+    assert_eq!(parser.parse(r#"{"key": "value"}"#, 15, false), None);
   }
 }

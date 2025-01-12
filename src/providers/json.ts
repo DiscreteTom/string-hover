@@ -20,7 +20,10 @@ export class JsonStringParser implements IStringParser {
     const line = document.lineAt(position).text;
 
     // TODO: apply cancel.isCancellationRequested
-    // TODO: don't show hover if no escape, only show in debug log
-    return this.parser.parse(line, position.character);
+
+    // TODO: move to config
+    const requireEscape = true;
+
+    return this.parser.parse(line, position.character, requireEscape);
   }
 }
