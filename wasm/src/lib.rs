@@ -9,6 +9,10 @@ extern "C" {
   fn console_log(s: &str);
   #[wasm_bindgen(js_namespace = Date, js_name = now)]
   fn date_now_ms() -> u64;
+
+  pub type CancellationToken;
+  #[wasm_bindgen(method, getter)]
+  fn isCancellationRequested(this: &CancellationToken) -> bool;
 }
 
 #[wasm_bindgen]
@@ -26,11 +30,27 @@ impl JsonStrParser {
     }
   }
 
-  pub fn parse(&self, line: &str, column: usize, require_escape: bool) -> Option<String> {
-    self.inner.parse(line, column, require_escape)
+  pub fn parse(
+    &self,
+    line: &str,
+    column: usize,
+    require_escape: bool,
+    cancel: CancellationToken,
+  ) -> Option<String> {
+    self.inner.parse(line, column, require_escape, || {
+      cancel.isCancellationRequested()
+    })
   }
 
-  pub fn parse_jsonc(&self, text: &str, offset: usize, require_escape: bool) -> Option<String> {
-    self.inner.parse_jsonc(text, offset, require_escape)
+  pub fn parse_jsonc(
+    &self,
+    text: &str,
+    offset: usize,
+    require_escape: bool,
+    cancel: CancellationToken,
+  ) -> Option<String> {
+    self.inner.parse_jsonc(text, offset, require_escape, || {
+      cancel.isCancellationRequested()
+    })
   }
 }

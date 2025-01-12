@@ -63,6 +63,7 @@ fn search<'text>(
   text: &'text str,
   offset: usize,
   require_escape: bool,
+  cancel: impl Fn() -> bool,
 ) -> Option<&'text str> {
   let mut parser = Builder::new().entry(entry).build(text);
 
@@ -72,6 +73,10 @@ fn search<'text>(
     let start = parsed_chars;
     let content = &text[output.value.range];
     parsed_chars = start + content.chars().count();
+
+    if cancel() {
+      break;
+    }
 
     // ignore non-string tokens
     let JsonToken::String { escaped } = output.value.data else {
@@ -179,12 +184,24 @@ impl JsonStrParser {
     }
   }
 
-  pub fn parse(&self, line: &str, column: usize, require_escape: bool) -> Option<String> {
-    self.parse_common(&self.search, line, column, require_escape)
+  pub fn parse(
+    &self,
+    line: &str,
+    column: usize,
+    require_escape: bool,
+    cancel: impl Fn() -> bool,
+  ) -> Option<String> {
+    self.parse_common(&self.search, line, column, require_escape, cancel)
   }
 
-  pub fn parse_jsonc(&self, text: &str, offset: usize, require_escape: bool) -> Option<String> {
-    self.parse_common(&self.search_jsonc, text, offset, require_escape)
+  pub fn parse_jsonc(
+    &self,
+    text: &str,
+    offset: usize,
+    require_escape: bool,
+    cancel: impl Fn() -> bool,
+  ) -> Option<String> {
+    self.parse_common(&self.search_jsonc, text, offset, require_escape, cancel)
   }
 
   fn parse_common(
@@ -193,8 +210,9 @@ impl JsonStrParser {
     text: &str,
     offset: usize,
     require_escape: bool,
+    cancel: impl Fn() -> bool,
   ) -> Option<String> {
-    let content = search(search_entry, text, offset, require_escape)?;
+    let content = search(search_entry, text, offset, require_escape, cancel)?;
     Some(eval(
       &self.eval,
       content,
@@ -212,14 +230,20 @@ mod tests {
   fn test_json_str_parser() {
     let parser = JsonStrParser::new();
     assert_eq!(
-      parser.parse(r#"{"key": "value"}"#, 8, false),
+      parser.parse(r#"{"key": "value"}"#, 8, false, || false),
       Some("value".to_string())
     );
     assert_eq!(
-      parser.parse(r#"{"key": "value"}"#, 14, false),
+      parser.parse(r#"{"key": "value"}"#, 14, false, || false),
       Some("value".to_string())
     );
-    assert_eq!(parser.parse(r#"{"key": "value"}"#, 14, true), None);
-    assert_eq!(parser.parse(r#"{"key": "value"}"#, 15, false), None);
+    assert_eq!(
+      parser.parse(r#"{"key": "value"}"#, 14, true, || false),
+      None
+    );
+    assert_eq!(
+      parser.parse(r#"{"key": "value"}"#, 15, false, || false),
+      None
+    );
   }
 }

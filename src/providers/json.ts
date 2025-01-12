@@ -13,17 +13,15 @@ export class JsonStringParser implements IStringParser {
   parse(
     document: vscode.TextDocument,
     position: vscode.Position,
-    _cancel: vscode.CancellationToken
+    cancel: vscode.CancellationToken
   ) {
     // perf: only get the current line
     // since JSON doesn't allow multi-line string & comments
     const line = document.lineAt(position).text;
 
-    // TODO: apply cancel.isCancellationRequested
-
     // TODO: move to config
     const requireEscape = true;
 
-    return this.parser.parse(line, position.character, requireEscape);
+    return this.parser.parse(line, position.character, requireEscape, cancel);
   }
 }

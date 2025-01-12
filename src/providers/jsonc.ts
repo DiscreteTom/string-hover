@@ -40,7 +40,7 @@ export class JsoncStringParser implements IStringParser {
     const requireEscape = true;
 
     console.time("wasm jsonc");
-    const output = this.parser.parse_jsonc(text, offset, requireEscape);
+    const output = this.parser.parse_jsonc(text, offset, requireEscape, cancel);
     console.timeEnd("wasm jsonc");
     console.log(output);
 
