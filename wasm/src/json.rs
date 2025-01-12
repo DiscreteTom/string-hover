@@ -3,7 +3,7 @@ use whitehole::{
   action::{Action, Input, Output},
   combinator::{eat, next, till, wrap, Combinator},
   parser::Builder,
-  range::{Range, WithRange},
+  range::WithRange,
 };
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -93,16 +93,11 @@ fn search<'text>(
   None
 }
 
-enum CharOrByteRange {
-  Char(char),
-  ByteRange(Range),
-}
-
 fn create_eval_entry() -> Box<dyn Action<(), String, Value = ()>> {
   let body_optional = {
     let escape = {
       let simple = {
-        wrap(|input| {
+        wrap(|input: Input<_, &mut String>| {
           input
             .instant()
             .rest()
@@ -124,29 +119,33 @@ fn create_eval_entry() -> Box<dyn Action<(), String, Value = ()>> {
               value: c,
             })
         })
+      };
+
+      let hex = {
+        eat('u') + { next(|c| c.is_ascii_hexdigit()) * 4 }
+          .select(|ctx| char::from_u32(u32::from_str_radix(ctx.content(), 16).unwrap()).unwrap())
+          .tuple()
       }
-      .tuple();
+      .pop();
 
-      let hex = eat('u') + { next(|c| c.is_ascii_hexdigit()) * 4 }
-        .select(|ctx| char::from_u32(u32::from_str_radix(ctx.content(), 16).unwrap()).unwrap())
-        .tuple();
-
-      eat('\\') + (simple | hex)
-    }
-    .pop()
-    .map(CharOrByteRange::Char);
+      eat('\\')
+        + (simple | hex)
+          .then(|ctx| {
+            let (input, output) = ctx.split();
+            (input.heap as &mut String).push(output.value);
+          })
+          .bind(())
+    };
 
     let non_escape =
-      { next(|c| c != '"' && c != '\\' && matches!(c, '\u{0020}'..='\u{10ffff}')) * (1..) }
-        .select(|ctx| CharOrByteRange::ByteRange(ctx.range()));
+      { next(|c| c != '"' && c != '\\' && matches!(c, '\u{0020}'..='\u{10ffff}')) * (1..) }.then(
+        |mut ctx| {
+          let content = ctx.content();
+          (ctx.heap() as &mut String).push_str(content)
+        },
+      );
 
-    (escape | non_escape).fold(
-      || {},
-      |v, _acc, input: Input<_, &mut String>| match v {
-        CharOrByteRange::Char(c) => input.heap.push(c),
-        CharOrByteRange::ByteRange(r) => input.heap.push_str(&input.instant().text()[r]),
-      },
-    ) * (..)
+    (escape | non_escape) * (..)
   }
   .prepare(|input| input.heap.clear());
 
