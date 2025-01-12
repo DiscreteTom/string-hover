@@ -1,27 +1,12 @@
 import * as vscode from "vscode";
-import { Lexer } from "retsac";
-import { config } from "../config";
+// import { config } from "../config";
 import type { IStringParser } from "../model";
 import { JsonStrParser } from "../../wasm/pkg/wasm";
 
-function buildLexer() {
-  return new Lexer.Builder()
-    .ignore(
-      Lexer.comment("//"),
-      Lexer.comment("/*", "*/"),
-      // perf: ignore all non-string-beginning-or-slash chars in one token
-      /[^"/]+/
-    )
-    .define({ string: Lexer.json.stringLiteral() })
-    .build({ debug: config.debug });
-}
-
 export class JsoncStringParser implements IStringParser {
-  private lexer: ReturnType<typeof buildLexer>;
   private parser: JsonStrParser;
 
   constructor() {
-    this.lexer = buildLexer();
     this.parser = new JsonStrParser();
   }
 
@@ -39,50 +24,6 @@ export class JsoncStringParser implements IStringParser {
     // TODO: move to config
     const requireEscape = true;
 
-    console.time("wasm jsonc");
-    const output = this.parser.parse_jsonc(text, offset, requireEscape, cancel);
-    console.timeEnd("wasm jsonc");
-    console.log(output);
-
-    this.lexer.reset().feed(text);
-
-    while (true) {
-      // just return if cancellation is requested
-      if (cancel.isCancellationRequested) {
-        return;
-      }
-
-      const token = this.lexer.lex();
-
-      if (token === null) {
-        // no more tokens
-        return;
-      }
-
-      if (
-        token.kind === "string" &&
-        token.start <= offset &&
-        token.start + token.content.length >= offset
-      ) {
-        // got a string token, and the position is in the token
-
-        // don't show hover if the string is not escaped
-        if (token.data.escapes.length === 0) {
-          if (config.debug) {
-            console.log(`got simple: ${token.content}`);
-          }
-          return;
-        }
-
-        return token.data.value;
-      }
-
-      // perf: if current token's end is after the position, no need to continue
-      if (token.start + token.content.length > offset) {
-        return;
-      }
-
-      // else, got token but not string, continue
-    }
+    return this.parser.parse_jsonc(text, offset, requireEscape, cancel);
   }
 }
